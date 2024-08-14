@@ -6,6 +6,9 @@ import org.apache.kafka.connect.data.Struct;
 
 public class CompositionEventRecord {
 
+    public static final String TYPE = "_type";
+    public static final String TYPE_VALUE = "COMPOSITION_EVENT_RECORD";
+
     public static final String CHANGE_TYPE_FIELD = "change_type";
     public static final String TIME_COMMITTED_FIELD = "time_committed";
 

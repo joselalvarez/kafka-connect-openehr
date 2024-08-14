@@ -27,11 +27,11 @@ public class OpenEHRSourceConnectorConfig extends BaseConnectorConfig {
 
     public static final String TABLE_OFFSET_NAMESPACE = "table.offset.namespace";
 
-    public static final String GROUP_FILTERS = "Event log filters";
-    public static final String FILTER_FROM_DATE = "filter.from.date";
-    public static final String FILTER_TO_DATE = "filter.to.date";
-    public static final String FILTER_BY_ARCHETYPE = "filter.by.archetype";
-    public static final String FILTER_BY_TEMPLATE = "filter.by.template";
+    public static final String COMPOSITION_GROUP_FILTERS = "Composition filters";
+    public static final String FILTER_COMPOSITION_FROM_DATE = "filter.composition.from.date";
+    public static final String FILTER_COMPOSITION_TO_DATE = "filter.composition.to.date";
+    public static final String FILTER_COMPOSITION_BY_ARCHETYPE = "filter.composition.by.archetype";
+    public static final String FILTER_COMPOSITION_BY_TEMPLATE = "filter.composition.by.template";
 
     public static final String HIKARICP_DOC = "https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#gear-configuration-knobs-baby";
     public static final String GROUP_JDBC = "ERHBase database connection";
@@ -87,10 +87,10 @@ public class OpenEHRSourceConnectorConfig extends BaseConnectorConfig {
         def.define(POLL_INTERVAL_MS, ConfigDef.Type.LONG, POLL_INTERVAL_MS_DEF, ConfigDef.Importance.MEDIUM, "TODO");
         def.define(POLL_BATCH_SIZE, ConfigDef.Type.LONG, POLL_BATCH_SIZE_DEF, ConfigDef.Importance.MEDIUM, "TODO");
 
-        def.define(FILTER_FROM_DATE, ConfigDef.Type.STRING, null, dateTimeValidator, ConfigDef.Importance.LOW, "TODO", GROUP_FILTERS, -1, ConfigDef.Width.NONE, FILTER_FROM_DATE);
-        def.define(FILTER_TO_DATE, ConfigDef.Type.STRING, null, dateTimeValidator, ConfigDef.Importance.LOW, "TODO", GROUP_FILTERS, -1, ConfigDef.Width.NONE, FILTER_TO_DATE);
-        def.define(FILTER_BY_TEMPLATE, ConfigDef.Type.STRING, null, (ConfigDef.Validator) null, ConfigDef.Importance.LOW, "TODO", GROUP_FILTERS, -1, ConfigDef.Width.NONE, FILTER_BY_TEMPLATE);
-        def.define(FILTER_BY_ARCHETYPE, ConfigDef.Type.STRING, null, archetypeValidator, ConfigDef.Importance.LOW, "TODO", GROUP_FILTERS, -1, ConfigDef.Width.NONE, FILTER_BY_ARCHETYPE);
+        def.define(FILTER_COMPOSITION_FROM_DATE, ConfigDef.Type.STRING, null, dateTimeValidator, ConfigDef.Importance.LOW, "TODO", COMPOSITION_GROUP_FILTERS, -1, ConfigDef.Width.NONE, FILTER_COMPOSITION_FROM_DATE);
+        def.define(FILTER_COMPOSITION_TO_DATE, ConfigDef.Type.STRING, null, dateTimeValidator, ConfigDef.Importance.LOW, "TODO", COMPOSITION_GROUP_FILTERS, -1, ConfigDef.Width.NONE, FILTER_COMPOSITION_TO_DATE);
+        def.define(FILTER_COMPOSITION_BY_TEMPLATE, ConfigDef.Type.STRING, null, (ConfigDef.Validator) null, ConfigDef.Importance.LOW, "TODO", COMPOSITION_GROUP_FILTERS, -1, ConfigDef.Width.NONE, FILTER_COMPOSITION_BY_TEMPLATE);
+        def.define(FILTER_COMPOSITION_BY_ARCHETYPE, ConfigDef.Type.STRING, null, archetypeValidator, ConfigDef.Importance.LOW, "TODO", COMPOSITION_GROUP_FILTERS, -1, ConfigDef.Width.NONE, FILTER_COMPOSITION_BY_ARCHETYPE);
 
         def.define(JDBC_URL, ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, (ConfigDef.Validator) null, ConfigDef.Importance.HIGH, HIKARICP_DOC, GROUP_JDBC, -1, ConfigDef.Width.NONE, JDBC_URL);
         def.define(JDBC_USERNAME, ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, (ConfigDef.Validator) null, ConfigDef.Importance.HIGH, HIKARICP_DOC, GROUP_JDBC, -1, ConfigDef.Width.NONE, JDBC_USERNAME);
@@ -147,18 +147,18 @@ public class OpenEHRSourceConnectorConfig extends BaseConnectorConfig {
         return getLong(POLL_INTERVAL_MS);
     }
 
-    public ZonedDateTime getFilterFromDate() {
-        String value = getString(FILTER_FROM_DATE);
+    public ZonedDateTime getFilterCompositionFromDate() {
+        String value = getString(FILTER_COMPOSITION_FROM_DATE);
         return StringUtils.isNotBlank(value) ? ZonedDateTime.parse(value, DateTimeFormatter.ISO_OFFSET_DATE_TIME) : null;
     }
 
-    public ZonedDateTime getFilterToDate() {
-        String value = getString(FILTER_TO_DATE);
+    public ZonedDateTime getFilterCompositionToDate() {
+        String value = getString(FILTER_COMPOSITION_TO_DATE);
         return StringUtils.isNotBlank(value) ? ZonedDateTime.parse(value, DateTimeFormatter.ISO_OFFSET_DATE_TIME) : null;
     }
 
-    public String getFilterByRootConcept() {
-        String archetype = getString(FILTER_BY_ARCHETYPE);
+    public String getFilterCompositionByRootConcept() {
+        String archetype = getString(FILTER_COMPOSITION_BY_ARCHETYPE);
         if (StringUtils.isNotBlank(archetype)) {
             ArchetypeID id = new ArchetypeID(archetype);
             String concept = id.getDomainConcept();
@@ -171,8 +171,8 @@ public class OpenEHRSourceConnectorConfig extends BaseConnectorConfig {
         return null;
     }
 
-    public String getFilterByTemplateId() {
-        String templateId = getString(FILTER_BY_TEMPLATE);
+    public String getFilterCompositionByTemplateId() {
+        String templateId = getString(FILTER_COMPOSITION_BY_TEMPLATE);
         return StringUtils.isNotBlank(templateId) ? templateId : null;
     }
 

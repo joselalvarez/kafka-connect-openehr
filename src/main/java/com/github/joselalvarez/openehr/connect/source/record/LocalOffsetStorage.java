@@ -2,43 +2,54 @@ package com.github.joselalvarez.openehr.connect.source.record;
 
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.storage.OffsetStorageReader;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Slf4j
-public class LocalOffsetStorage<T, O> {
-    private Map<Integer, O> offsetIndex = new LinkedHashMap<>();
+public class LocalOffsetStorage<T> {
 
-    public LocalOffsetStorage(OpenEHRSourceConnectorConfig taskConfig, OffsetStorageReader reader, RecordMapper<T, O> mapper) {
+    interface OffsetMapper<T> {
+        List<Map<String, ?>> getTablePartitions(OpenEHRSourceConnectorConfig taskConfig);
+        String mapHashPartition(Map<String, ?> partition);
+        T mapOffset(Map<String, ?> partition, Map<String, ?> offset);
+    }
 
+    private OffsetMapper<T> mapper;
+    private Map<String, Map<String, ?>> offsetIndex = new LinkedHashMap<>();
+    private Map<String, Map<String, ?>> partitionIndex = new LinkedHashMap<>();
+
+    public LocalOffsetStorage(OffsetStorageReader reader, OpenEHRSourceConnectorConfig taskConfig, OffsetMapper<T> mapper) {
 
         log.info("Task[name={}]: Load offsets", taskConfig.getTaskName());
-        for (int i = 0; i < taskConfig.getTablePatitionSize(); i++) {
-            if (i % taskConfig.getTaskMax() == taskConfig.getTaskId()) {
-                O offset = mapper.mapOffset(i);
-                Map<String, ?> offsetMap = reader.offset(mapper.mapRecordPartition(offset));
-                if (offsetMap != null) {
-                    offset = mapper.mapOffset(i, offsetMap);
-                }
-                offsetIndex.put(i, offset);
-                log.info("Task[name={}]: {}", taskConfig.getTaskName(), offset.toString());
+        this.mapper = mapper;
+        for (Map<String, ?> partition : mapper.getTablePartitions(taskConfig)) {
+            String hash = mapper.mapHashPartition(partition);
+            Map<String, ?> offset = reader.offset(partition);
+            offset = offset != null ? offset : new HashMap<>();
+            log.info("Task[name={}]: [{}, {}]", taskConfig.getTaskName(), partition, offset);
+            offsetIndex.put(hash, offset);
+            partitionIndex.put(hash, partition);
+        }
+    }
+
+    public List<SourceRecord> registerOffsets(List<SourceRecord> pollList) {
+        if (pollList != null && !pollList.isEmpty()) {
+            for (SourceRecord record : pollList){
+                String hash = mapper.mapHashPartition(record.sourcePartition());
+                offsetIndex.put(hash, new LinkedHashMap<>(record.sourceOffset()));
             }
         }
+        return pollList;
     }
 
-    public void updateOffsetsFrom(List<T> pollList, Function<T, O> offsetProvider, Function<O, Integer> partitionProvider) {
-        for (T record : pollList) {
-            O offset = offsetProvider.apply(record);
-            offsetIndex.put(partitionProvider.apply(offset), offset);
+    public List<T> getCurrentOffsetList() {
+        List<T> offsetList = new ArrayList<>();
+        for (Map.Entry<String, Map<String, ?>> entry : offsetIndex.entrySet()) {
+            Map<String, ?> partition = partitionIndex.get(entry.getKey());
+            offsetList.add(mapper.mapOffset(partition, entry.getValue()));
         }
-    }
-
-    public List<O> getCurrentOffsetList() {
-        return offsetIndex.values().stream().collect(Collectors.toUnmodifiableList());
+        return offsetList;
     }
 }

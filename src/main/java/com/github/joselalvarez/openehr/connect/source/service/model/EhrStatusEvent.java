@@ -18,9 +18,15 @@ public class EhrStatusEvent {
     private UUID uid;
     private Integer version;
 
-    private ArchetypeID archetypeID;
+    private String archetypeId;
     private UIDBasedId ehrStatusId;
     private UIDBasedId replacedId;
+
+    private String subjectType;
+    private String subjectNamespace;
+    private String subjectId;
+    private String subjectIdScheme;
+
     private EhrStatus ehrStatus;
 
     private EventLogOffset offset;

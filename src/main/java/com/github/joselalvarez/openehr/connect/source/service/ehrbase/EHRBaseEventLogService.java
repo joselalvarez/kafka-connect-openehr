@@ -30,6 +30,10 @@ public class EHRBaseEventLogService implements OpenEHREventLogService {
 
     @Override
     public List<EhrStatusEvent> getEhrStatusEventList(EventLogFilter filter) {
-        return null;
+        try {
+            return mapper.mapEhrStatusEventList(ehrBaseRepository.findEhrStatusAggregateEventList(filter));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

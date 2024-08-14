@@ -4,8 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
 
+import java.sql.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 @Slf4j
@@ -26,13 +31,27 @@ public abstract class PeriodicSourceTask extends SourceTask {
             Thread.sleep(pollIntervalMs - lastExecutionTimeMs);
         }
         long start = System.currentTimeMillis();
-        List<SourceRecord> records = !isClosedContext.get() ? periodicPoll() : Collections.emptyList();
+        List<SourceRecord> records = new ArrayList<>();
+        if (!isClosedContext.get()) {
+            CompletableFuture<List<SourceRecord>> compositionPoll = CompletableFuture.supplyAsync(this::periodicCompositionPoll);
+            CompletableFuture<List<SourceRecord>> ehrStatusPoll = CompletableFuture.supplyAsync(this::periodicEhrStatusPoll);
+
+            records.addAll(CompletableFuture.allOf(compositionPoll, ehrStatusPoll)
+                    .thenApply(voidResult -> {
+                        List<SourceRecord> combinedList = new ArrayList<>();
+                        combinedList.addAll(compositionPoll.join());
+                        combinedList.addAll(ehrStatusPoll.join());
+                        return combinedList;
+                    }).join());
+        }
         lastExecutionTimeMs = System.currentTimeMillis() - start;
         log.info("Periodic poll summary [records={}, time={}ms, interval={}ms]",
                 records != null ? records.size() : 0, lastExecutionTimeMs, pollIntervalMs);
         return records;
     }
 
-    public abstract List<SourceRecord> periodicPoll();
+    public abstract List<SourceRecord> periodicCompositionPoll();
+
+    public abstract List<SourceRecord> periodicEhrStatusPoll();
 
 }

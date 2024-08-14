@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
 import com.github.joselalvarez.openehr.connect.source.record.CompositionEventRecordMapper;
+import com.github.joselalvarez.openehr.connect.source.record.EhrStatusEventRecordMapper;
 import com.github.joselalvarez.openehr.connect.source.service.ehrbase.EHRBaseEventLogService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -27,6 +28,7 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     private EHRBaseEventLogService eventLogService;
     private ObjectMapper canonicalObjectMapper;
     private CompositionEventRecordMapper compositionEventRecordMapper;
+    private EhrStatusEventRecordMapper ehrStatusEventRecordMapper;
 
     public EHRBaseSourceConnectorContext(OpenEHRSourceConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
@@ -39,6 +41,7 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
         canonicalObjectMapper = CanonicalJson.MARSHAL_OM;
         canonicalObjectMapper.disable(SerializationFeature.INDENT_OUTPUT);
         compositionEventRecordMapper = new CompositionEventRecordMapper(canonicalObjectMapper);
+        ehrStatusEventRecordMapper = new EhrStatusEventRecordMapper(canonicalObjectMapper);
     }
 
     @Override
@@ -57,8 +60,13 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     }
 
     @Override
-    public CompositionEventRecordMapper geCompositionEventRecordMapper() {
+    public CompositionEventRecordMapper getCompositionEventRecordMapper() {
         return compositionEventRecordMapper;
+    }
+
+    @Override
+    public EhrStatusEventRecordMapper getEhrStatusEventRecordMapper() {
+        return ehrStatusEventRecordMapper;
     }
 
     @Override

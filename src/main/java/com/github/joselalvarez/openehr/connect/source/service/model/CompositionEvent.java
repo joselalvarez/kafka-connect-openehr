@@ -20,7 +20,7 @@ public class CompositionEvent {
     private UUID uid;
     private Integer version;
 
-    private ArchetypeID archetypeID;
+    private ArchetypeID archetypeId;
     private TemplateId templateId;
     private UIDBasedId compositionId;
     private UIDBasedId replacedId;

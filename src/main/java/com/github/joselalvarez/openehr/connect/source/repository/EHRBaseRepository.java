@@ -1,6 +1,6 @@
 package com.github.joselalvarez.openehr.connect.source.repository;
 
-import com.github.joselalvarez.openehr.connect.source.repository.entity.AggregateEvent;
+import com.github.joselalvarez.openehr.connect.source.repository.entity.CommonAggregateEvent;
 import com.github.joselalvarez.openehr.connect.source.service.model.EventLogFilter;
 import com.github.joselalvarez.openehr.connect.source.service.model.EventLogOffset;
 import com.github.mustachejava.DefaultMustacheFactory;
@@ -131,19 +131,19 @@ public class EHRBaseRepository {
 
 
     private final QueryRunner queryRunner;
-    private final AggregateEvent.BeanListHandler aggregateEventHandler;
+    private final CommonAggregateEvent.BeanListHandler aggregateEventHandler;
 
     public EHRBaseRepository(QueryRunner queryRunner) {
         this.queryRunner = queryRunner;
-        this.aggregateEventHandler = new AggregateEvent.BeanListHandler();
+        this.aggregateEventHandler = new CommonAggregateEvent.BeanListHandler();
     }
 
-    public List<AggregateEvent> findCompositionAggregateEventList(EventLogFilter filter) throws SQLException {
+    public List<CommonAggregateEvent> findCompositionAggregateEventList(EventLogFilter filter) throws SQLException {
         Query query = CompositionAggregateEventListQueryHelper.buildQuery(filter);
         return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
     }
 
-    public List<AggregateEvent> findEhrStatusAggregateEventList(EventLogFilter filter) throws SQLException {
+    public List<CommonAggregateEvent> findEhrStatusAggregateEventList(EventLogFilter filter) throws SQLException {
         Query query = EhrStatusAggregateEventListQueryHelper.buildQuery(filter);
         return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
     }

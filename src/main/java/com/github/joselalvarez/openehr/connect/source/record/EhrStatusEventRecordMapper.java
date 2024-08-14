@@ -3,7 +3,7 @@ package com.github.joselalvarez.openehr.connect.source.record;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
-import com.github.joselalvarez.openehr.connect.source.service.model.CompositionEvent;
+import com.github.joselalvarez.openehr.connect.source.service.model.EhrStatusEvent;
 import com.github.joselalvarez.openehr.connect.source.service.model.EventLogOffset;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,12 +17,12 @@ import java.util.*;
 
 @RequiredArgsConstructor
 @Slf4j
-public class CompositionEventRecordMapper implements LocalOffsetStorage.OffsetMapper<EventLogOffset> {
+public class EhrStatusEventRecordMapper implements LocalOffsetStorage.OffsetMapper<EventLogOffset> {
 
     private final ObjectMapper canonicalObjectMapper;
 
-    public Struct mapStruct(CompositionEvent source) {
-        CompositionEventRecord target = new CompositionEventRecord();
+    public Struct mapStruct(EhrStatusEvent source) {
+        EhrStatusEventRecord target = new EhrStatusEventRecord();
 
         target.setChangeType(source.getChangeType().getValue());
         target.setTimeCommitted(source.getTimeCommitted().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
@@ -31,21 +31,25 @@ public class CompositionEventRecordMapper implements LocalOffsetStorage.OffsetMa
         target.setUid(source.getUid().toString());
         target.setVersion(source.getVersion());
 
-        target.setArchetypeId(source.getArchetypeId() != null ? source.getArchetypeId().getFullId() : null);
-        target.setTemplateId(source.getTemplateId() != null ? source.getTemplateId().getValue() : null);
-        target.setCompositionId(source.getCompositionId() != null ? source.getCompositionId().getValue() : null);
+        target.setArchetypeId(source.getArchetypeId());
+        target.setEhrStatusId(source.getEhrStatusId() != null ? source.getEhrStatusId().getValue() : null);
         target.setReplacedId(source.getReplacedId() != null ? source.getReplacedId().getValue() : null);
 
+        target.setSubjectType(source.getSubjectType());
+        target.setSubjectNamespace(source.getSubjectNamespace());
+        target.setSubjectId(source.getSubjectId());
+        target.setSubjectIdScheme(source.getSubjectIdScheme());
+
         try {
-            if (source.getComposition() != null)
-                target.setComposition(canonicalObjectMapper.writeValueAsBytes(source.getComposition()));
+            if (source.getEhrStatus() != null)
+                target.setEhrStatus(canonicalObjectMapper.writeValueAsBytes(source.getEhrStatus()));
         } catch (JsonProcessingException e) {
             log.error("Composition serialization error: {}", e);
         }
         return target.getDelegate();
     }
 
-    public SourceRecord mapRecord(CompositionEvent source, String topic) {
+    public SourceRecord mapRecord(EhrStatusEvent source, String topic) {
         return new SourceRecord(
                 mapRecordPartition(source.getOffset()),
                 mapRecordOffset(source.getOffset()),
@@ -53,14 +57,14 @@ public class CompositionEventRecordMapper implements LocalOffsetStorage.OffsetMa
                 null, // Topic partition (default by kafka)
                 Schema.STRING_SCHEMA, // Message key schema
                 source.getEhrId().toString(), // Message key
-                CompositionEventRecord.SCHEMA, // Value schema
+                EhrStatusEventRecord.SCHEMA, // Value schema
                 mapStruct(source) // Value
         );
     }
 
-    public List<SourceRecord> mapRecordList(List<CompositionEvent> sourceList, String topic) {
+    public List<SourceRecord> mapRecordList(List<EhrStatusEvent> sourceList, String topic) {
         List<SourceRecord> resultList = new ArrayList<>();
-        for (CompositionEvent ce : sourceList) {
+        for (EhrStatusEvent ce : sourceList) {
             resultList.add(mapRecord(ce, topic));
         }
         return resultList;
@@ -68,7 +72,7 @@ public class CompositionEventRecordMapper implements LocalOffsetStorage.OffsetMa
 
     public Map<String, ?> mapRecordPartition(EventLogOffset offset) {
         return new LinkedHashMap<>() {{
-            put("t", "composition");
+            put("t", "ehr_status");
             put("p", String.valueOf(offset.getPartition()));
         }};
     }

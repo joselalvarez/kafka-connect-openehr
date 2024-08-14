@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class AggregateEvent {
+public class CommonAggregateEvent {
 
     private int tablePartition;
     private int taskPartition;
@@ -27,7 +27,7 @@ public class AggregateEvent {
     private Integer sysVersion;
     private byte [] aggregate;
 
-    public static class BeanListHandler implements ResultSetHandler<List<AggregateEvent>> {
+    public static class BeanListHandler implements ResultSetHandler<List<CommonAggregateEvent>> {
 
         private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -40,7 +40,7 @@ public class AggregateEvent {
         public static final String SYS_VERSION = "sys_version";
         public static final String AGGREGATE = "aggregate";
 
-        public AggregateEvent map(AggregateEvent target, ResultSet source) throws SQLException {
+        public CommonAggregateEvent map(CommonAggregateEvent target, ResultSet source) throws SQLException {
             target.setTablePartition(source.getInt(TABLE_PARTITION));
             target.setTaskPartition(source.getInt(TASK_PARTITION));
             String uid = source.getString(UID);
@@ -56,10 +56,10 @@ public class AggregateEvent {
         }
 
         @Override
-        public List<AggregateEvent> handle(ResultSet rs) throws SQLException {
-            List<AggregateEvent> resultList = new ArrayList<>();
+        public List<CommonAggregateEvent> handle(ResultSet rs) throws SQLException {
+            List<CommonAggregateEvent> resultList = new ArrayList<>();
             while (rs.next()){
-                resultList.add(map(new AggregateEvent(), rs));
+                resultList.add(map(new CommonAggregateEvent(), rs));
             }
             return resultList;
         }
