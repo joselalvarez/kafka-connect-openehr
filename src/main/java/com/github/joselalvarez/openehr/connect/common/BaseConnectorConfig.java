@@ -43,7 +43,7 @@ public abstract class BaseConnectorConfig extends AbstractConfig {
         this.connectorName = map.getOrDefault(CONNECTOR_NAME, "unknown");
         this.taskMax = Integer.valueOf(map.getOrDefault(TASK_MAX, "1"));
         this.sharedContextId = map.getOrDefault(SHARED_CONTEXT_ID, getConnectorName());
-        this.taskId = Integer.valueOf(map.getOrDefault(TASK_ID, "0"));
+        this.taskId = Integer.valueOf(map.getOrDefault(TASK_ID, "-1"));
     }
 
     public String getConnectorName() {
@@ -64,19 +64,6 @@ public abstract class BaseConnectorConfig extends AbstractConfig {
 
     public String getTaskName() {
         return String.format("%s-%s", getConnectorName(), getTaskId());
-    }
-
-    public List<Map<String, String>> getTaskMapListConfig(int max) {
-        List<Map<String, String>> taskMapList = new ArrayList<>();
-        String uuid = UUID.randomUUID().toString();
-        for (int i = 0; i < max; i++) {
-            Map<String, String> taskMap = new HashMap<>();
-            taskMap.put(SHARED_CONTEXT_ID, uuid);
-            taskMap.put(TASK_ID, String.valueOf(i));
-            taskMap.putAll(originalsStrings());
-            taskMapList.add(taskMap);
-        }
-        return taskMapList;
     }
 
 }

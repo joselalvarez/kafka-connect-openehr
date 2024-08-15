@@ -1,5 +1,6 @@
 package com.github.joselalvarez.openehr.connect;
 
+import com.github.joselalvarez.openehr.connect.common.BaseConnectorConfig;
 import com.github.joselalvarez.openehr.connect.common.ConnectorInfo;
 import com.github.joselalvarez.openehr.connect.source.OpenEHRSourceTask;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
@@ -8,8 +9,7 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class EHRBaseSourceConnector extends SourceConnector {
@@ -39,8 +39,22 @@ public class EHRBaseSourceConnector extends SourceConnector {
 
     @Override
     public List<Map<String, String>> taskConfigs(int max) {
+
         log.info("Connector[name={}]: config task [max={}]", connectorName, max);
-        return connectorConfig.getTaskMapListConfig(max);
+        if (max > connectorConfig.getTablePatitionSize()) {
+            log.warn("Connector[name={}]: The number of tasks '{}' exceeds the number of partitions '{}'", connectorName, max, connectorConfig.getTablePatitionSize());
+            max = connectorConfig.getTablePatitionSize();
+        }
+
+        List<Map<String, String>> taskMapList = new ArrayList<>();
+        String sharedContextId = UUID.randomUUID().toString();
+        for (int i = 0; i < max; i++) {
+            taskMapList.add(connectorConfig.getTaskConfig(sharedContextId, i));
+        }
+
+        log.info("Connector[name={}]: {} tasks configured", connectorName, max);
+        return taskMapList;
+
     }
 
     @Override

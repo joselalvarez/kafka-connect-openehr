@@ -1,8 +1,9 @@
-package com.github.joselalvarez.openehr.connect.source.repository;
+package com.github.joselalvarez.openehr.connect.source.ehrbase;
 
-import com.github.joselalvarez.openehr.connect.source.repository.entity.CommonAggregateEvent;
-import com.github.joselalvarez.openehr.connect.source.service.model.EventLogFilter;
-import com.github.joselalvarez.openehr.connect.source.service.model.EventLogOffset;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEvent;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEventOffset;
+import com.github.joselalvarez.openehr.connect.source.record.RecordOffset;
+import com.github.joselalvarez.openehr.connect.source.task.model.EventFilter;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
@@ -40,15 +41,13 @@ public class EHRBaseRepository {
             SQL_TMPL = mustacheFactory.compile(SQL_TMPL_PATH);
         }
 
-        public static Query buildQuery(EventLogFilter filter) {
+        public static Query buildQuery(EventFilter filter, int tablePartitionSize, long pollSize) {
             StringWriter writer = new StringWriter();
             List<Object> queryParams = new ArrayList<>();
 
-            queryParams.add(filter.getTablePartitions());
-            queryParams.add(filter.getTasks());
-            queryParams.add(filter.getTaskId());
+            queryParams.add(tablePartitionSize);
 
-            ZonedDateTime bestFromDate = filter.getBestFromDate();
+            ZonedDateTime bestFromDate = null;//filter.getBestFromDate();
             if (bestFromDate != null)
                 queryParams.add(Timestamp.from(bestFromDate.toInstant()));
 
@@ -61,7 +60,8 @@ public class EHRBaseRepository {
             if (StringUtils.isNotBlank(filter.getRootConcept()))
                 queryParams.add(filter.getRootConcept());
 
-            for (EventLogOffset offset : filter.getOffsetList()) {
+            for (RecordOffset o : filter.getOffsetList()) {
+                EHRBaseEventOffset offset = EHRBaseEventOffset.from(o);
                 queryParams.add(offset.getPartition());
                 if (!offset.isEmpty()) {
                     Timestamp t = Timestamp.from(offset.getDate().toInstant());
@@ -74,7 +74,7 @@ public class EHRBaseRepository {
                 }
             }
 
-            queryParams.add(filter.getBatchSize());
+            queryParams.add(pollSize);
 
             SQL_TMPL.execute(writer, filter);
             log.debug(writer.toString());
@@ -92,22 +92,21 @@ public class EHRBaseRepository {
             SQL_TMPL = mustacheFactory.compile(SQL_TMPL_PATH);
         }
 
-        public static Query buildQuery(EventLogFilter filter) {
+        public static Query buildQuery(EventFilter filter, int tablePartitionSize, long pollSize) {
             StringWriter writer = new StringWriter();
             List<Object> queryParams = new ArrayList<>();
 
-            queryParams.add(filter.getTablePartitions());
-            queryParams.add(filter.getTasks());
-            queryParams.add(filter.getTaskId());
+            queryParams.add(tablePartitionSize);
 
-            ZonedDateTime bestFromDate = filter.getBestFromDate();
+            ZonedDateTime bestFromDate = null;//filter.getBestFromDate();
             if (bestFromDate != null)
                 queryParams.add(Timestamp.from(bestFromDate.toInstant()));
 
             if (filter.getToDate() != null)
                 queryParams.add(Timestamp.from(filter.getToDate().toInstant()));
 
-            for (EventLogOffset offset : filter.getOffsetList()) {
+            for (RecordOffset o : filter.getOffsetList()) {
+                EHRBaseEventOffset offset = EHRBaseEventOffset.from(o);
                 queryParams.add(offset.getPartition());
                 if (!offset.isEmpty()) {
                     Timestamp t = Timestamp.from(offset.getDate().toInstant());
@@ -120,7 +119,7 @@ public class EHRBaseRepository {
                 }
             }
 
-            queryParams.add(filter.getBatchSize());
+            queryParams.add(pollSize);
 
             SQL_TMPL.execute(writer, filter);
             log.debug(writer.toString());
@@ -131,20 +130,22 @@ public class EHRBaseRepository {
 
 
     private final QueryRunner queryRunner;
-    private final CommonAggregateEvent.BeanListHandler aggregateEventHandler;
+    private final EHRBaseEventOffsetFactory offsetFactory;
+    private final EHRBaseEvent.BeanListHandler aggregateEventHandler;
 
-    public EHRBaseRepository(QueryRunner queryRunner) {
+    public EHRBaseRepository(QueryRunner queryRunner, EHRBaseEventOffsetFactory offsetFactory) {
         this.queryRunner = queryRunner;
-        this.aggregateEventHandler = new CommonAggregateEvent.BeanListHandler();
+        this.offsetFactory = offsetFactory;
+        this.aggregateEventHandler = new EHRBaseEvent.BeanListHandler();
     }
 
-    public List<CommonAggregateEvent> findCompositionAggregateEventList(EventLogFilter filter) throws SQLException {
-        Query query = CompositionAggregateEventListQueryHelper.buildQuery(filter);
+    public List<EHRBaseEvent> findCompositionEventList(EventFilter filter) throws SQLException {
+        Query query = CompositionAggregateEventListQueryHelper.buildQuery(filter, offsetFactory.getTablePartitionSize(), offsetFactory.getPollBatchSize());
         return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
     }
 
-    public List<CommonAggregateEvent> findEhrStatusAggregateEventList(EventLogFilter filter) throws SQLException {
-        Query query = EhrStatusAggregateEventListQueryHelper.buildQuery(filter);
+    public List<EHRBaseEvent> findEhrStatusEventList(EventFilter filter) throws SQLException {
+        Query query = EhrStatusAggregateEventListQueryHelper.buildQuery(filter, offsetFactory.getTablePartitionSize(), offsetFactory.getPollBatchSize());
         return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
     }
 }

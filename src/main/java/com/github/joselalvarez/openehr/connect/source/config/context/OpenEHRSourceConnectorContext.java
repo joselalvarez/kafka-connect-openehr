@@ -3,7 +3,8 @@ package com.github.joselalvarez.openehr.connect.source.config.context;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.joselalvarez.openehr.connect.source.record.CompositionEventRecordMapper;
 import com.github.joselalvarez.openehr.connect.source.record.EhrStatusEventRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.service.OpenEHREventLogService;
+import com.github.joselalvarez.openehr.connect.source.record.RecordPartitionFactory;
+import com.github.joselalvarez.openehr.connect.source.task.OpenEHREventLogService;
 
 import javax.sql.DataSource;
 
@@ -15,4 +16,5 @@ public interface OpenEHRSourceConnectorContext {
     ObjectMapper getCanonicalObjectMapper();
     CompositionEventRecordMapper getCompositionEventRecordMapper();
     EhrStatusEventRecordMapper getEhrStatusEventRecordMapper();
+    RecordPartitionFactory getRecordPartitionFactory();
 }

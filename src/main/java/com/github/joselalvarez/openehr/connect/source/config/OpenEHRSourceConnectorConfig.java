@@ -8,6 +8,7 @@ import org.apache.kafka.common.config.ConfigException;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -24,8 +25,6 @@ public class OpenEHRSourceConnectorConfig extends BaseConnectorConfig {
 
     public static final String POLL_BATCH_SIZE = "poll.batch.size";
     public static final long POLL_BATCH_SIZE_DEF = 1000;
-
-    public static final String TABLE_OFFSET_NAMESPACE = "table.offset.namespace";
 
     public static final String COMPOSITION_GROUP_FILTERS = "Composition filters";
     public static final String FILTER_COMPOSITION_FROM_DATE = "filter.composition.from.date";
@@ -188,9 +187,12 @@ public class OpenEHRSourceConnectorConfig extends BaseConnectorConfig {
         return max <= TABLE_PATITION_SIZE ? max : TABLE_PATITION_SIZE;
     }
 
-    @Override
-    public List<Map<String, String>> getTaskMapListConfig(int max) {
-        return super.getTaskMapListConfig(max <= TABLE_PATITION_SIZE ? max : TABLE_PATITION_SIZE);
+    public Map<String, String> getTaskConfig(String sharedContextId, int taskId) {
+        Map<String, String> taskMap = new HashMap<>();
+        taskMap.put(BaseConnectorConfig.SHARED_CONTEXT_ID, sharedContextId);
+        taskMap.put(BaseConnectorConfig.TASK_ID, String.valueOf(taskId));
+        taskMap.putAll(originalsStrings());
+        return taskMap;
     }
 
     public void validate() throws ConfigException {

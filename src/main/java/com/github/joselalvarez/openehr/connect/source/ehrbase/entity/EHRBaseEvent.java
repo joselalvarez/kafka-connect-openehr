@@ -1,4 +1,4 @@
-package com.github.joselalvarez.openehr.connect.source.repository.entity;
+package com.github.joselalvarez.openehr.connect.source.ehrbase.entity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
@@ -15,10 +15,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class CommonAggregateEvent {
+public class EHRBaseEvent {
 
     private int tablePartition;
-    private int taskPartition;
 
     private UUID uid;
     private UUID ehrId;
@@ -27,12 +26,11 @@ public class CommonAggregateEvent {
     private Integer sysVersion;
     private byte [] aggregate;
 
-    public static class BeanListHandler implements ResultSetHandler<List<CommonAggregateEvent>> {
+    public static class BeanListHandler implements ResultSetHandler<List<EHRBaseEvent>> {
 
         private static final ObjectMapper objectMapper = new ObjectMapper();
 
         public static final String TABLE_PARTITION = "table_partition";
-        public static final String TASK_PARTITION = "task_partition";
         public static final String UID = "uid";
         public static final String EHR_ID = "ehr_id";
         public static final String CHANGE_TYPE = "change_type";
@@ -40,9 +38,8 @@ public class CommonAggregateEvent {
         public static final String SYS_VERSION = "sys_version";
         public static final String AGGREGATE = "aggregate";
 
-        public CommonAggregateEvent map(CommonAggregateEvent target, ResultSet source) throws SQLException {
+        public EHRBaseEvent map(EHRBaseEvent target, ResultSet source) throws SQLException {
             target.setTablePartition(source.getInt(TABLE_PARTITION));
-            target.setTaskPartition(source.getInt(TASK_PARTITION));
             String uid = source.getString(UID);
             target.setUid(StringUtils.isNotBlank(uid) ? UUID.fromString(uid) : null);
             String ehrId = source.getString(EHR_ID);
@@ -56,10 +53,10 @@ public class CommonAggregateEvent {
         }
 
         @Override
-        public List<CommonAggregateEvent> handle(ResultSet rs) throws SQLException {
-            List<CommonAggregateEvent> resultList = new ArrayList<>();
+        public List<EHRBaseEvent> handle(ResultSet rs) throws SQLException {
+            List<EHRBaseEvent> resultList = new ArrayList<>();
             while (rs.next()){
-                resultList.add(map(new CommonAggregateEvent(), rs));
+                resultList.add(map(new EHRBaseEvent(), rs));
             }
             return resultList;
         }

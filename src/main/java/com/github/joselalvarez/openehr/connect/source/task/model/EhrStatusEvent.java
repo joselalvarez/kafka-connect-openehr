@@ -1,7 +1,7 @@
-package com.github.joselalvarez.openehr.connect.source.service.model;
+package com.github.joselalvarez.openehr.connect.source.task.model;
 
+import com.github.joselalvarez.openehr.connect.source.record.RecordOffset;
 import com.nedap.archie.rm.ehr.EhrStatus;
-import com.nedap.archie.rm.support.identification.ArchetypeID;
 import com.nedap.archie.rm.support.identification.UIDBasedId;
 import lombok.Data;
 
@@ -29,6 +29,6 @@ public class EhrStatusEvent {
 
     private EhrStatus ehrStatus;
 
-    private EventLogOffset offset;
+    private RecordOffset offset;
 
 }

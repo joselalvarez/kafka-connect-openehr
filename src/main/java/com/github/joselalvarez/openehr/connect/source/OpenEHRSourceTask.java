@@ -6,12 +6,11 @@ import com.github.joselalvarez.openehr.connect.source.config.context.OpenEHRSour
 import com.github.joselalvarez.openehr.connect.source.config.context.OpenEHRSourceConnectorSharedContext;
 import com.github.joselalvarez.openehr.connect.source.record.CompositionEventRecordMapper;
 import com.github.joselalvarez.openehr.connect.source.record.EhrStatusEventRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.record.LocalOffsetStorage;
-import com.github.joselalvarez.openehr.connect.source.service.OpenEHREventLogService;
-import com.github.joselalvarez.openehr.connect.source.service.model.CompositionEvent;
-import com.github.joselalvarez.openehr.connect.source.service.model.EhrStatusEvent;
-import com.github.joselalvarez.openehr.connect.source.service.model.EventLogFilter;
-import com.github.joselalvarez.openehr.connect.source.service.model.EventLogOffset;
+import com.github.joselalvarez.openehr.connect.source.record.TaskOffsetStorage;
+import com.github.joselalvarez.openehr.connect.source.task.OpenEHREventLogService;
+import com.github.joselalvarez.openehr.connect.source.task.model.CompositionEvent;
+import com.github.joselalvarez.openehr.connect.source.task.model.EhrStatusEvent;
+import com.github.joselalvarez.openehr.connect.source.task.model.EventFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.connect.source.SourceRecord;
 
@@ -26,8 +25,7 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
     private OpenEHREventLogService eventLogService;
     private CompositionEventRecordMapper compositionEventRecordMapper;
     private EhrStatusEventRecordMapper ehrStatusEventRecordMapper;
-    private LocalOffsetStorage<EventLogOffset> compositionEventOffsetStore;
-    private LocalOffsetStorage<EventLogOffset> ehrStatusEventOffsetStore;
+    private TaskOffsetStorage taskOffsetStorage;
 
 
     @Override
@@ -42,16 +40,11 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
         eventLogService = connectorContext.getOpenEHREventLogService();
         compositionEventRecordMapper = connectorContext.getCompositionEventRecordMapper();
         ehrStatusEventRecordMapper = connectorContext.getEhrStatusEventRecordMapper();
-
-        compositionEventOffsetStore = new LocalOffsetStorage(
+        taskOffsetStorage = new TaskOffsetStorage(
                 context.offsetStorageReader(),
                 taskConfig,
-                compositionEventRecordMapper);
-
-        ehrStatusEventOffsetStore = new LocalOffsetStorage(
-                context.offsetStorageReader(),
-                taskConfig,
-                ehrStatusEventRecordMapper);
+                connectorContext.getRecordPartitionFactory()
+        );
         super.start(taskConfig.getPollIntervalMs(), connectorContext::isClosed);
         log.info("Task[name={}]: online", taskConfig.getTaskName());
     }
@@ -59,40 +52,29 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
     @Override
     public List<SourceRecord> periodicCompositionPoll() {
 
-        EventLogFilter filter = new EventLogFilter(
-                taskConfig.getTablePatitionSize(),
-                taskConfig.getTaskMax(),
-                taskConfig.getTaskId(),
-                taskConfig.getPollBatchSize());
-
+        EventFilter filter = new EventFilter();
         filter.setFromDate(taskConfig.getFilterCompositionFromDate());
         filter.setToDate(taskConfig.getFilterCompositionToDate());
         filter.setRootConcept(taskConfig.getFilterCompositionByRootConcept());
         filter.setTemplateId(taskConfig.getFilterCompositionByTemplateId());
-        filter.setOffsetList(compositionEventOffsetStore.getCurrentOffsetList());
+        filter.setOffsetList(taskOffsetStorage.getOffsetListSnapshot(CompositionEvent.class));
 
         List<CompositionEvent> pollList = eventLogService.getCompositionEventList(filter);
 
-        return compositionEventOffsetStore.registerOffsets(compositionEventRecordMapper
+        return taskOffsetStorage.updateWith(compositionEventRecordMapper
                             .mapRecordList(pollList, taskConfig.getCompositionTopic())
         );
     }
 
     @Override
     public List<SourceRecord> periodicEhrStatusPoll() {
-        EventLogFilter filter = new EventLogFilter(
-                taskConfig.getTablePatitionSize(),
-                taskConfig.getTaskMax(),
-                taskConfig.getTaskId(),
-                taskConfig.getPollBatchSize());
+        EventFilter filter = new EventFilter();
 
-        //filter.setFromDate(taskConfig.getFilterCompositionFromDate());
-        //filter.setToDate(taskConfig.getFilterCompositionToDate());
-        filter.setOffsetList(ehrStatusEventOffsetStore.getCurrentOffsetList());
+        filter.setOffsetList(taskOffsetStorage.getOffsetListSnapshot(EhrStatusEvent.class));
 
         List<EhrStatusEvent> pollList = eventLogService.getEhrStatusEventList(filter);
 
-        return ehrStatusEventOffsetStore.registerOffsets(ehrStatusEventRecordMapper
+        return taskOffsetStorage.updateWith(ehrStatusEventRecordMapper
                 .mapRecordList(pollList, taskConfig.getEhrTopic())
         );
     }

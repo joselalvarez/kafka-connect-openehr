@@ -3,16 +3,18 @@ package com.github.joselalvarez.openehr.connect.source.config.context;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseEventOffsetFactory;
 import com.github.joselalvarez.openehr.connect.source.record.CompositionEventRecordMapper;
 import com.github.joselalvarez.openehr.connect.source.record.EhrStatusEventRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.service.ehrbase.EHRBaseEventLogService;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseEventLogService;
+import com.github.joselalvarez.openehr.connect.source.record.RecordPartitionFactory;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import net.almson.object.ReferenceCountedObject;
 import org.apache.commons.dbutils.QueryRunner;
-import com.github.joselalvarez.openehr.connect.source.repository.EHRBaseRepository;
-import com.github.joselalvarez.openehr.connect.source.service.OpenEHREventLogService;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseRepository;
+import com.github.joselalvarez.openehr.connect.source.task.OpenEHREventLogService;
 import org.ehrbase.openehr.sdk.serialisation.jsonencoding.CanonicalJson;
 
 import javax.sql.DataSource;
@@ -29,6 +31,7 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     private ObjectMapper canonicalObjectMapper;
     private CompositionEventRecordMapper compositionEventRecordMapper;
     private EhrStatusEventRecordMapper ehrStatusEventRecordMapper;
+    private EHRBaseEventOffsetFactory eventLogOffsetFactory;
 
     public EHRBaseSourceConnectorContext(OpenEHRSourceConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
@@ -36,12 +39,14 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
         hikariDataSource = new HikariDataSource(new HikariConfig(connectorConfig.getJdbcProperties()));
         log.info("Connector[name={}]: EHRBase datasource created", connectorConfig.getConnectorName());
         // Beans
-        ehrBaseRepository = new EHRBaseRepository(new QueryRunner(hikariDataSource));
+        eventLogOffsetFactory = new EHRBaseEventOffsetFactory(connectorConfig);
+        ehrBaseRepository = new EHRBaseRepository(new QueryRunner(hikariDataSource), eventLogOffsetFactory);
         eventLogService = new EHRBaseEventLogService(ehrBaseRepository);
         canonicalObjectMapper = CanonicalJson.MARSHAL_OM;
         canonicalObjectMapper.disable(SerializationFeature.INDENT_OUTPUT);
         compositionEventRecordMapper = new CompositionEventRecordMapper(canonicalObjectMapper);
         ehrStatusEventRecordMapper = new EhrStatusEventRecordMapper(canonicalObjectMapper);
+
     }
 
     @Override
@@ -67,6 +72,11 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     @Override
     public EhrStatusEventRecordMapper getEhrStatusEventRecordMapper() {
         return ehrStatusEventRecordMapper;
+    }
+
+    @Override
+    public RecordPartitionFactory getRecordPartitionFactory() {
+        return eventLogOffsetFactory;
     }
 
     @Override

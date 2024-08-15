@@ -11,8 +11,7 @@ WITH composition_audit_details_view AS (
         cv.root_concept,
         ts.template_id,
         cv.archived,
-        encode(substring(c.ehr_id::text, 0, 5)::bytea, 'hex')::int % ? AS table_partition,
-        encode(substring(c.ehr_id::text, 0, 5)::bytea, 'hex')::int % ? AS task_partition
+        encode(substring(c.ehr_id::text, 0, 5)::bytea, 'hex')::int % ? AS table_partition
     FROM
         audit_details ad
     INNER JOIN
@@ -43,7 +42,6 @@ WITH composition_audit_details_view AS (
 )
 SELECT
     table_partition,
-    task_partition,
     uid,
     ehr_id,
     change_type,
@@ -58,7 +56,6 @@ SELECT
 FROM (
     SELECT
         adw.table_partition,
-        adw.task_partition,
         adw.uid,
         adw.ehr_id,
         adw.change_type,
@@ -75,7 +72,8 @@ FROM (
         FROM
             composition_audit_details_view
         WHERE
-            task_partition = ?
+            --task_partition = ?
+            true
             {{#bestFromDate}} AND time_committed >= ? {{/bestFromDate}}
             {{#toDate}} AND time_committed <= ? {{/toDate}}
             {{#templateId}} AND template_id = ? {{/templateId}}
@@ -104,7 +102,6 @@ FROM (
 ) AS fragments
 GROUP BY
     table_partition,
-    task_partition,
     uid,
     ehr_id,
     change_type,

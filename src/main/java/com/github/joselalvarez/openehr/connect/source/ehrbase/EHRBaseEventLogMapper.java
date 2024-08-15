@@ -1,20 +1,17 @@
-package com.github.joselalvarez.openehr.connect.source.service.ehrbase.mapper;
+package com.github.joselalvarez.openehr.connect.source.ehrbase;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.joselalvarez.openehr.connect.source.repository.entity.CommonAggregateEvent;
-import com.github.joselalvarez.openehr.connect.source.service.model.ChangeType;
-import com.github.joselalvarez.openehr.connect.source.service.model.CompositionEvent;
-import com.github.joselalvarez.openehr.connect.source.service.model.EhrStatusEvent;
-import com.github.joselalvarez.openehr.connect.source.service.model.EventLogOffset;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEvent;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEventOffset;
+import com.github.joselalvarez.openehr.connect.source.task.model.ChangeType;
+import com.github.joselalvarez.openehr.connect.source.task.model.CompositionEvent;
+import com.github.joselalvarez.openehr.connect.source.task.model.EhrStatusEvent;
 import com.nedap.archie.rm.composition.Composition;
 import com.nedap.archie.rm.ehr.EhrStatus;
-import com.nedap.archie.rm.generic.PartyProxy;
-import com.nedap.archie.rm.support.identification.ArchetypeID;
 import com.nedap.archie.rm.support.identification.GenericId;
 import com.nedap.archie.rm.support.identification.ObjectVersionId;
 import com.nedap.archie.rm.support.identification.PartyRef;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.ehrbase.openehr.sdk.dbformat.DbToRmFormat;
 
 import java.util.ArrayList;
@@ -25,7 +22,7 @@ public class EHRBaseEventLogMapper {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public CompositionEvent mapCompositionEvent(CompositionEvent target, CommonAggregateEvent source) {
+    public CompositionEvent mapCompositionEvent(CompositionEvent target, EHRBaseEvent source) {
 
         target.setChangeType(ChangeType.parse(source.getChangeType()));
         target.setTimeCommitted(source.getTimeCommitted());
@@ -63,7 +60,8 @@ public class EHRBaseEventLogMapper {
             target.setReplacedId(composition.getUid());
         }
 
-        target.setOffset(new EventLogOffset(
+        target.setOffset(new EHRBaseEventOffset(
+                target.getClass(),
                 source.getTablePartition(),
                 source.getTimeCommitted(),
                 source.getUid(),
@@ -72,15 +70,15 @@ public class EHRBaseEventLogMapper {
         return target;
     }
 
-    public List<CompositionEvent> mapCompositionEventList(List<CommonAggregateEvent> sourceList) {
+    public List<CompositionEvent> mapCompositionEventList(List<EHRBaseEvent> sourceList) {
         List<CompositionEvent> resultList = new ArrayList<>();
-        for (CommonAggregateEvent source : sourceList) {
+        for (EHRBaseEvent source : sourceList) {
             resultList.add(mapCompositionEvent(new CompositionEvent(), source));
         }
         return resultList;
     }
 
-    public EhrStatusEvent mapEhrStatusEvent(EhrStatusEvent target, CommonAggregateEvent source) {
+    public EhrStatusEvent mapEhrStatusEvent(EhrStatusEvent target, EHRBaseEvent source) {
 
         target.setChangeType(ChangeType.parse(source.getChangeType()));
         target.setTimeCommitted(source.getTimeCommitted());
@@ -122,7 +120,8 @@ public class EHRBaseEventLogMapper {
             }
         }
 
-        target.setOffset(new EventLogOffset(
+        target.setOffset(new EHRBaseEventOffset(
+                target.getClass(),
                 source.getTablePartition(),
                 source.getTimeCommitted(),
                 source.getUid(),
@@ -131,9 +130,9 @@ public class EHRBaseEventLogMapper {
         return target;
     }
 
-    public List<EhrStatusEvent> mapEhrStatusEventList(List<CommonAggregateEvent> sourceList) {
+    public List<EhrStatusEvent> mapEhrStatusEventList(List<EHRBaseEvent> sourceList) {
         List<EhrStatusEvent> resultList = new ArrayList<>();
-        for (CommonAggregateEvent source : sourceList) {
+        for (EHRBaseEvent source : sourceList) {
             resultList.add(mapEhrStatusEvent(new EhrStatusEvent(), source));
         }
         return resultList;

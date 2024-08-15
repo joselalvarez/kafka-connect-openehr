@@ -1,5 +1,6 @@
-package com.github.joselalvarez.openehr.connect.source.service.model;
+package com.github.joselalvarez.openehr.connect.source.task.model;
 
+import com.github.joselalvarez.openehr.connect.source.record.RecordOffset;
 import lombok.Data;
 
 import java.time.ZonedDateTime;
@@ -7,27 +8,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class EventLogFilter {
+public class EventFilter {
 
     private ZonedDateTime fromDate;
     private ZonedDateTime toDate;
     private String templateId;
     private String rootConcept;
-    private long batchSize;
+    //private long batchSize;
 
-    private int tablePartitions;
-    private int tasks;
-    private int taskId;
+    //private int tablePartitions;
+    //private int tasks;
+    //private int taskId;
 
-    private List<EventLogOffset> offsetList = new ArrayList<>();
+    private List<RecordOffset> offsetList = new ArrayList<>();
 
-    public EventLogFilter(int tablePartitions, int tasks, int taskId, long batchSize) {
+    /*
+    public EventFilter(int tablePartitions, int tasks, int taskId, long batchSize) {
         this.tablePartitions = tablePartitions;
         this.tasks = tasks;
         this.taskId = taskId;
         this.batchSize = batchSize;
-    }
+    }*/
 
+    /*
     public ZonedDateTime getBestFromDate() {
         ZonedDateTime minOffsetDate = null;
         if (offsetList != null && !offsetList.isEmpty()) {
@@ -44,5 +47,7 @@ public class EventLogFilter {
         return fromDate != null ? fromDate : minOffsetDate;
 
     }
+   
+     */
 
 }
