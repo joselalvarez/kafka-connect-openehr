@@ -3,18 +3,18 @@ package com.github.joselalvarez.openehr.connect.source.config.context;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseEventLogService;
 import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseEventOffsetFactory;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseRepository;
 import com.github.joselalvarez.openehr.connect.source.record.CompositionEventRecordMapper;
 import com.github.joselalvarez.openehr.connect.source.record.EhrStatusEventRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseEventLogService;
 import com.github.joselalvarez.openehr.connect.source.record.RecordPartitionFactory;
+import com.github.joselalvarez.openehr.connect.source.task.OpenEHREventLogService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import net.almson.object.ReferenceCountedObject;
 import org.apache.commons.dbutils.QueryRunner;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseRepository;
-import com.github.joselalvarez.openehr.connect.source.task.OpenEHREventLogService;
 import org.ehrbase.openehr.sdk.serialisation.jsonencoding.CanonicalJson;
 
 import javax.sql.DataSource;
@@ -40,7 +40,7 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
         log.info("Connector[name={}]: EHRBase datasource created", connectorConfig.getConnectorName());
         // Beans
         eventLogOffsetFactory = new EHRBaseEventOffsetFactory(connectorConfig);
-        ehrBaseRepository = new EHRBaseRepository(new QueryRunner(hikariDataSource), eventLogOffsetFactory);
+        ehrBaseRepository = new EHRBaseRepository(connectorConfig, new QueryRunner(hikariDataSource), eventLogOffsetFactory);
         eventLogService = new EHRBaseEventLogService(ehrBaseRepository);
         canonicalObjectMapper = CanonicalJson.MARSHAL_OM;
         canonicalObjectMapper.disable(SerializationFeature.INDENT_OUTPUT);

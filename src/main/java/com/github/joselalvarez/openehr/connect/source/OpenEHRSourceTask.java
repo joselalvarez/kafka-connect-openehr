@@ -1,7 +1,9 @@
 package com.github.joselalvarez.openehr.connect.source;
 
 import com.github.joselalvarez.openehr.connect.common.ConnectorInfo;
+import com.github.joselalvarez.openehr.connect.common.TaskConfig;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
+import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceTaskConfig;
 import com.github.joselalvarez.openehr.connect.source.config.context.OpenEHRSourceConnectorContext;
 import com.github.joselalvarez.openehr.connect.source.config.context.OpenEHRSourceConnectorSharedContext;
 import com.github.joselalvarez.openehr.connect.source.record.CompositionEventRecordMapper;
@@ -20,7 +22,8 @@ import java.util.Map;
 @Slf4j
 public class OpenEHRSourceTask extends PeriodicSourceTask {
 
-    private OpenEHRSourceConnectorConfig taskConfig;
+    private OpenEHRSourceTaskConfig taskConfig = new OpenEHRSourceTaskConfig();
+    private OpenEHRSourceConnectorConfig connectorConfig;
     private OpenEHRSourceConnectorContext connectorContext;
     private OpenEHREventLogService eventLogService;
     private CompositionEventRecordMapper compositionEventRecordMapper;
@@ -35,7 +38,8 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
 
     @Override
     public void start(Map<String, String> map) {
-        taskConfig = new OpenEHRSourceConnectorConfig(map);
+        taskConfig.load(map, OpenEHRSourceConnectorConfig::new);
+        connectorConfig = taskConfig.getConnectorConfig();
         connectorContext = OpenEHRSourceConnectorSharedContext.start(taskConfig);
         eventLogService = connectorContext.getOpenEHREventLogService();
         compositionEventRecordMapper = connectorContext.getCompositionEventRecordMapper();
@@ -45,24 +49,23 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
                 taskConfig,
                 connectorContext.getRecordPartitionFactory()
         );
-        super.start(taskConfig.getPollIntervalMs(), connectorContext::isClosed);
+        super.start(connectorConfig.getPollIntervalMs(), connectorContext::isClosed);
         log.info("Task[name={}]: online", taskConfig.getTaskName());
     }
 
     @Override
     public List<SourceRecord> periodicCompositionPoll() {
-
         EventFilter filter = new EventFilter();
-        filter.setFromDate(taskConfig.getFilterCompositionFromDate());
-        filter.setToDate(taskConfig.getFilterCompositionToDate());
-        filter.setRootConcept(taskConfig.getFilterCompositionByRootConcept());
-        filter.setTemplateId(taskConfig.getFilterCompositionByTemplateId());
+        filter.setFromDate(connectorConfig.getFilterCompositionFromDate());
+        filter.setToDate(connectorConfig.getFilterCompositionToDate());
+        filter.setRootConcept(connectorConfig.getFilterCompositionByArchetype());
+        filter.setTemplateId(connectorConfig.getFilterCompositionByTemplate());
         filter.setOffsetList(taskOffsetStorage.getOffsetListSnapshot(CompositionEvent.class));
 
         List<CompositionEvent> pollList = eventLogService.getCompositionEventList(filter);
 
         return taskOffsetStorage.updateWith(compositionEventRecordMapper
-                            .mapRecordList(pollList, taskConfig.getCompositionTopic())
+                            .mapRecordList(pollList, connectorConfig.getCompositionTopic())
         );
     }
 
@@ -75,7 +78,7 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
         List<EhrStatusEvent> pollList = eventLogService.getEhrStatusEventList(filter);
 
         return taskOffsetStorage.updateWith(ehrStatusEventRecordMapper
-                .mapRecordList(pollList, taskConfig.getEhrTopic())
+                .mapRecordList(pollList, connectorConfig.getEhrTopic())
         );
     }
 

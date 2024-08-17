@@ -1,6 +1,6 @@
 package com.github.joselalvarez.openehr.connect.source.record;
 
-import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
+import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceTaskConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.storage.OffsetStorageReader;
@@ -13,7 +13,7 @@ public class TaskOffsetStorage {
     private RecordPartitionFactory partitionFactory;
     private Map<Map<String, ?>, Map<String, ?>> offsetIndex = new LinkedHashMap<>();
 
-    public TaskOffsetStorage(OffsetStorageReader reader, OpenEHRSourceConnectorConfig taskConfig,
+    public TaskOffsetStorage(OffsetStorageReader reader, OpenEHRSourceTaskConfig taskConfig,
                              RecordPartitionFactory partitionFactory) {
 
         log.info("Task[name={}]: Load offsets", taskConfig.getTaskName());

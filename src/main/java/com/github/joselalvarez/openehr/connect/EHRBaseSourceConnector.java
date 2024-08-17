@@ -1,6 +1,5 @@
 package com.github.joselalvarez.openehr.connect;
 
-import com.github.joselalvarez.openehr.connect.common.BaseConnectorConfig;
 import com.github.joselalvarez.openehr.connect.common.ConnectorInfo;
 import com.github.joselalvarez.openehr.connect.source.OpenEHRSourceTask;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
@@ -9,13 +8,16 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 public class EHRBaseSourceConnector extends SourceConnector {
 
     private String connectorName;
-    private OpenEHRSourceConnectorConfig connectorConfig;
+    private OpenEHRSourceConnectorConfig connectorConfig = new OpenEHRSourceConnectorConfig();
 
     @Override
     public String version() {
@@ -25,9 +27,9 @@ public class EHRBaseSourceConnector extends SourceConnector {
     @Override
     public void start(Map<String, String> map) {
         log.info("EHRBase source connector starting ...");
-        connectorConfig = new OpenEHRSourceConnectorConfig(map);
-        connectorName = connectorConfig.getConnectorName();
+        connectorConfig.load(map);
         connectorConfig.validate();
+        connectorName = connectorConfig.getConnectorName();
         log.info("Connector[name={}]: configuration loaded", connectorName);
         log.info("Connector[name={}]: online", connectorName);
     }
@@ -41,18 +43,19 @@ public class EHRBaseSourceConnector extends SourceConnector {
     public List<Map<String, String>> taskConfigs(int max) {
 
         log.info("Connector[name={}]: config task [max={}]", connectorName, max);
-        if (max > connectorConfig.getTablePatitionSize()) {
-            log.warn("Connector[name={}]: The number of tasks '{}' exceeds the number of partitions '{}'", connectorName, max, connectorConfig.getTablePatitionSize());
-            max = connectorConfig.getTablePatitionSize();
+        int total = max;
+        if (max > connectorConfig.getTablePartitionSize()) {
+            log.warn("Connector[name={}]: The number of tasks '{}' exceeds the number of partitions '{}'", connectorName, max, connectorConfig.getTablePartitionSize());
+            total = connectorConfig.getTablePartitionSize();
         }
 
         List<Map<String, String>> taskMapList = new ArrayList<>();
         String sharedContextId = UUID.randomUUID().toString();
         for (int i = 0; i < max; i++) {
-            taskMapList.add(connectorConfig.getTaskConfig(sharedContextId, i));
+            taskMapList.add(connectorConfig.createTaskConfig(sharedContextId, i, total));
         }
 
-        log.info("Connector[name={}]: {} tasks configured", connectorName, max);
+        log.info("Connector[name={}]: {} tasks configured", connectorName, total);
         return taskMapList;
 
     }
@@ -64,7 +67,7 @@ public class EHRBaseSourceConnector extends SourceConnector {
 
     @Override
     public ConfigDef config() {
-        return OpenEHRSourceConnectorConfig.getDefinitions();
+        return connectorConfig.definitions();
     }
 
 }

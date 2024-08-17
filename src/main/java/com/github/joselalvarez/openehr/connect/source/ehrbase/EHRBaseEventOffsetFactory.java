@@ -13,29 +13,17 @@ import java.util.Map;
 
 public class EHRBaseEventOffsetFactory implements RecordPartitionFactory {
 
-    public OpenEHRSourceConnectorConfig config;
+    private OpenEHRSourceConnectorConfig connectorConfig;
 
-    public EHRBaseEventOffsetFactory(OpenEHRSourceConnectorConfig config) {
-        this.config = config;
-    }
-
-    public int getTaskMax() {
-        return config.getTaskMax();
-    }
-
-    public int getTablePartitionSize() {
-        return config.getTablePatitionSize();
-    }
-
-    public long getPollBatchSize() {
-        return config.getPollBatchSize();
+    public EHRBaseEventOffsetFactory(OpenEHRSourceConnectorConfig connectorConfig) {
+        this.connectorConfig = connectorConfig;
     }
 
     @Override
     public List<Map<String, ?>> getTaskPartitions(int taskId) {
         List<Map<String, ?>> partitions = new ArrayList<>();
-        for (int i = 0; i < config.getTablePatitionSize(); i++) {
-            if (i % config.getTaskMax() == taskId) {
+        for (int i = 0; i < connectorConfig.getTablePartitionSize(); i++) {
+            if (i % connectorConfig.getTasksConfigured() == taskId) {
                 partitions.add(new EHRBaseEventOffset(CompositionEvent.class, i).getPartitionMap());
                 partitions.add(new EHRBaseEventOffset(EhrStatusEvent.class, i).getPartitionMap());
             }

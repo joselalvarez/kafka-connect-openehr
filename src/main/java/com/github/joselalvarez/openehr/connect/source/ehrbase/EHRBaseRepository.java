@@ -1,5 +1,6 @@
 package com.github.joselalvarez.openehr.connect.source.ehrbase;
 
+import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
 import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEvent;
 import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEventOffset;
 import com.github.joselalvarez.openehr.connect.source.record.RecordOffset;
@@ -129,23 +130,25 @@ public class EHRBaseRepository {
     }
 
 
+    private final OpenEHRSourceConnectorConfig connectorConfig;
     private final QueryRunner queryRunner;
     private final EHRBaseEventOffsetFactory offsetFactory;
     private final EHRBaseEvent.BeanListHandler aggregateEventHandler;
 
-    public EHRBaseRepository(QueryRunner queryRunner, EHRBaseEventOffsetFactory offsetFactory) {
+    public EHRBaseRepository(OpenEHRSourceConnectorConfig connectorConfig, QueryRunner queryRunner, EHRBaseEventOffsetFactory offsetFactory) {
+        this.connectorConfig = connectorConfig;
         this.queryRunner = queryRunner;
         this.offsetFactory = offsetFactory;
         this.aggregateEventHandler = new EHRBaseEvent.BeanListHandler();
     }
 
     public List<EHRBaseEvent> findCompositionEventList(EventFilter filter) throws SQLException {
-        Query query = CompositionAggregateEventListQueryHelper.buildQuery(filter, offsetFactory.getTablePartitionSize(), offsetFactory.getPollBatchSize());
+        Query query = CompositionAggregateEventListQueryHelper.buildQuery(filter, connectorConfig.getTablePartitionSize(), connectorConfig.getPollBatchSize());
         return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
     }
 
     public List<EHRBaseEvent> findEhrStatusEventList(EventFilter filter) throws SQLException {
-        Query query = EhrStatusAggregateEventListQueryHelper.buildQuery(filter, offsetFactory.getTablePartitionSize(), offsetFactory.getPollBatchSize());
+        Query query = EhrStatusAggregateEventListQueryHelper.buildQuery(filter, connectorConfig.getTablePartitionSize(), connectorConfig.getPollBatchSize());
         return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
     }
 }
