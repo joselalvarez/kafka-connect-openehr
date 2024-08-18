@@ -74,7 +74,7 @@ FROM (
         WHERE
             --task_partition = ?
             true
-            {{#bestFromDate}} AND time_committed >= ? {{/bestFromDate}}
+            {{#fromDate}} AND time_committed >= ? {{/fromDate}}
             {{#toDate}} AND time_committed <= ? {{/toDate}}
             {{#templateId}} AND template_id = ? {{/templateId}}
             {{#rootConcept}} AND root_concept = ? {{/rootConcept}}

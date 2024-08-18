@@ -16,7 +16,7 @@ import java.util.Properties;
 public class OpenEHRSourceConnectorConfig extends ConnectorConfig {
 
     //General
-    public static final int TABLE_PATITION_SIZE = 16;
+    public static final int TABLE_PARTITION_SIZE = 16;
     public static final String KAFKA_COMPOSITION_TOPIC = "kafka.composition.topic";
     public static final String KAFKA_EHR_TOPIC = "kafka.ehr.status.topic";
     public static final String POLL_INTERVAL_MS = "poll.interval.ms";
@@ -49,7 +49,7 @@ public class OpenEHRSourceConnectorConfig extends ConnectorConfig {
     public static final String DATABASE_SCHEMA = String.format("%s.%s", DATABASE_CONFIG_PREFIX, "schema");
     public static final String READ_ONLY = "readOnly";
 
-    private int tablePartitionSize = TABLE_PATITION_SIZE;
+    private int tablePartitionSize = TABLE_PARTITION_SIZE;
     private String compositionTopic;
     private String ehrTopic;
     private long pollIntervalMs;
@@ -62,7 +62,6 @@ public class OpenEHRSourceConnectorConfig extends ConnectorConfig {
 
     private ZonedDateTime filterEhrStatusFromDate;
     private ZonedDateTime filterEhrStatusToDate;
-    private String filterEhrStatusByNamespace;
 
     private Properties jdbcProperties;
 
@@ -84,7 +83,6 @@ public class OpenEHRSourceConnectorConfig extends ConnectorConfig {
 
         def.define(FILTER_ERH_STATUS_FROM_DATE, ConfigDef.Type.STRING, null, dateTimeValidator, ConfigDef.Importance.LOW, "TODO", ERH_STATUS_FILTER_GROUP, -1, ConfigDef.Width.NONE, FILTER_ERH_STATUS_FROM_DATE);
         def.define(FILTER_ERH_STATUS_TO_DATE, ConfigDef.Type.STRING, null, dateTimeValidator, ConfigDef.Importance.LOW, "TODO", ERH_STATUS_FILTER_GROUP, -1, ConfigDef.Width.NONE, FILTER_ERH_STATUS_TO_DATE);
-        def.define(FILTER_ERH_STATUS_BY_NAMESPACE, ConfigDef.Type.STRING, null, (ConfigDef.Validator) null, ConfigDef.Importance.LOW, "TODO", ERH_STATUS_FILTER_GROUP, -1, ConfigDef.Width.NONE, FILTER_ERH_STATUS_BY_NAMESPACE);
 
         def.define(DATABASE_URL, ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, (ConfigDef.Validator) null, ConfigDef.Importance.HIGH, HIKARICP_DOC, DATABASE_GROUP, -1, ConfigDef.Width.NONE, DATABASE_URL);
         def.define(DATABASE_USERNAME, ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, (ConfigDef.Validator) null, ConfigDef.Importance.HIGH, HIKARICP_DOC, DATABASE_GROUP, -1, ConfigDef.Width.NONE, DATABASE_USERNAME);
@@ -125,7 +123,6 @@ public class OpenEHRSourceConnectorConfig extends ConnectorConfig {
 
         filterEhrStatusFromDate = date(getConfig().getString(FILTER_ERH_STATUS_FROM_DATE));
         filterEhrStatusToDate = date(getConfig().getString(FILTER_ERH_STATUS_TO_DATE));
-        filterEhrStatusByNamespace = clean(getConfig().getString(FILTER_ERH_STATUS_BY_NAMESPACE));
 
         String url = clean(getConfig().getString(DATABASE_URL));
         Map<String, String> databaseMap = getOriginalMapWithPrefix(String.format("%s.", DATABASE_CONFIG_PREFIX));

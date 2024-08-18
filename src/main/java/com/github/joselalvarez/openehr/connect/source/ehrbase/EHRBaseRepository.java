@@ -17,7 +17,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.StringWriter;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,9 +47,8 @@ public class EHRBaseRepository {
 
             queryParams.add(tablePartitionSize);
 
-            ZonedDateTime bestFromDate = null;//filter.getBestFromDate();
-            if (bestFromDate != null)
-                queryParams.add(Timestamp.from(bestFromDate.toInstant()));
+            if (filter.getFromDate() != null)
+                queryParams.add(Timestamp.from(filter.getFromDate().toInstant()));
 
             if (filter.getToDate() != null)
                 queryParams.add(Timestamp.from(filter.getToDate().toInstant()));
@@ -99,9 +97,8 @@ public class EHRBaseRepository {
 
             queryParams.add(tablePartitionSize);
 
-            ZonedDateTime bestFromDate = null;//filter.getBestFromDate();
-            if (bestFromDate != null)
-                queryParams.add(Timestamp.from(bestFromDate.toInstant()));
+            if (filter.getFromDate() != null)
+                queryParams.add(Timestamp.from(filter.getFromDate().toInstant()));
 
             if (filter.getToDate() != null)
                 queryParams.add(Timestamp.from(filter.getToDate().toInstant()));
@@ -132,13 +129,11 @@ public class EHRBaseRepository {
 
     private final OpenEHRSourceConnectorConfig connectorConfig;
     private final QueryRunner queryRunner;
-    private final EHRBaseEventOffsetFactory offsetFactory;
     private final EHRBaseEvent.BeanListHandler aggregateEventHandler;
 
-    public EHRBaseRepository(OpenEHRSourceConnectorConfig connectorConfig, QueryRunner queryRunner, EHRBaseEventOffsetFactory offsetFactory) {
+    public EHRBaseRepository(OpenEHRSourceConnectorConfig connectorConfig, QueryRunner queryRunner) {
         this.connectorConfig = connectorConfig;
         this.queryRunner = queryRunner;
-        this.offsetFactory = offsetFactory;
         this.aggregateEventHandler = new EHRBaseEvent.BeanListHandler();
     }
 

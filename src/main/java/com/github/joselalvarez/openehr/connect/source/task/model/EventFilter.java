@@ -14,7 +14,6 @@ public class EventFilter {
     private ZonedDateTime toDate;
     private String templateId;
     private String rootConcept;
-    private String namespace;
 
     private List<RecordOffset> offsetList = new ArrayList<>();
 }

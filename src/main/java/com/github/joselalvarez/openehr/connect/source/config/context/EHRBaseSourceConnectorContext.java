@@ -40,7 +40,7 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
         log.info("Connector[name={}]: EHRBase datasource created", connectorConfig.getConnectorName());
         // Beans
         eventLogOffsetFactory = new EHRBaseEventOffsetFactory(connectorConfig);
-        ehrBaseRepository = new EHRBaseRepository(connectorConfig, new QueryRunner(hikariDataSource), eventLogOffsetFactory);
+        ehrBaseRepository = new EHRBaseRepository(connectorConfig, new QueryRunner(hikariDataSource));
         eventLogService = new EHRBaseEventLogService(ehrBaseRepository);
         canonicalObjectMapper = CanonicalJson.MARSHAL_OM;
         canonicalObjectMapper.disable(SerializationFeature.INDENT_OUTPUT);

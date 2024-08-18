@@ -6,8 +6,7 @@ WITH ehr_status_audit_details_view AS (
         ad.time_committed,
         sys_version,
         sv.archived,
-        encode(substring(c.ehr_id::text, 0, 5)::bytea, 'hex')::int % ? AS table_partition,
-        encode(substring(c.ehr_id::text, 0, 5)::bytea, 'hex')::int % ? AS task_partition
+        encode(substring(c.ehr_id::text, 0, 5)::bytea, 'hex')::int % ? AS table_partition
     FROM
         audit_details ad
     INNER JOIN
@@ -32,7 +31,6 @@ WITH ehr_status_audit_details_view AS (
 )
 SELECT
     table_partition,
-    task_partition,
     uid,
     ehr_id,
     change_type,
@@ -42,7 +40,6 @@ SELECT
 FROM (
     SELECT
         adw.table_partition,
-        adw.task_partition,
         adw.uid,
         adw.ehr_id,
         adw.change_type,
@@ -57,8 +54,8 @@ FROM (
         FROM
             ehr_status_audit_details_view
         WHERE
-            task_partition = ?
-            {{#bestFromDate}} AND time_committed >= ? {{/bestFromDate}}
+            true
+            {{#fromDate}} AND time_committed >= ? {{/fromDate}}
             {{#toDate}} AND time_committed <= ? {{/toDate}}
             AND (
                 false
@@ -84,7 +81,6 @@ FROM (
 ) AS fragments
 GROUP BY
     table_partition,
-    task_partition,
     uid,
     ehr_id,
     change_type,
