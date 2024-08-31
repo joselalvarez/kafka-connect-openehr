@@ -72,7 +72,6 @@ FROM (
         FROM
             composition_audit_details_view
         WHERE
-            --task_partition = ?
             true
             {{#fromDate}} AND time_committed >= ? {{/fromDate}}
             {{#toDate}} AND time_committed <= ? {{/toDate}}

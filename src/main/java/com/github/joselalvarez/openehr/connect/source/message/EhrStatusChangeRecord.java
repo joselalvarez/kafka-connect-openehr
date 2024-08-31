@@ -1,13 +1,14 @@
-package com.github.joselalvarez.openehr.connect.source.record;
+package com.github.joselalvarez.openehr.connect.source.message;
 
+import com.github.joselalvarez.openehr.connect.source.service.model.EhrStatusChange;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 
-public class EhrStatusEventRecord {
+public class EhrStatusChangeRecord {
 
     public static final String TYPE = "_type";
-    public static final String TYPE_VALUE = "EHR_STATUS_EVENT_RECORD";
+    public static final String TYPE_NAME = "EHR_STATUS_CHANGE";
 
     public static final String CHANGE_TYPE_FIELD = "change_type";
     public static final String TIME_COMMITTED_FIELD = "time_committed";
@@ -31,7 +32,7 @@ public class EhrStatusEventRecord {
 
     static {
         SCHEMA = SchemaBuilder.struct()
-                .name(EhrStatusEventRecord.class.getCanonicalName())
+                .name(EhrStatusChange.class.getCanonicalName())
                 .field(CHANGE_TYPE_FIELD, Schema.STRING_SCHEMA)
                 .field(TIME_COMMITTED_FIELD, Schema.STRING_SCHEMA)
                 .field(EHR_ID_FIELD, Schema.STRING_SCHEMA)
@@ -50,11 +51,11 @@ public class EhrStatusEventRecord {
 
     private Struct delegate;
 
-    public EhrStatusEventRecord() {
+    public EhrStatusChangeRecord() {
         this.delegate = new Struct(SCHEMA);
     }
 
-    public EhrStatusEventRecord(Struct delegate) {
+    public EhrStatusChangeRecord(Struct delegate) {
         this.delegate = delegate;
     }
 
@@ -63,7 +64,7 @@ public class EhrStatusEventRecord {
     }
 
     public static boolean isSchema(Schema schema) {
-        return schema != null && EhrStatusEventRecord.class.getCanonicalName().equals(schema.name());
+        return schema != null && SCHEMA.name().equals(schema.name());
     }
 
     public void setChangeType(String changeType) {

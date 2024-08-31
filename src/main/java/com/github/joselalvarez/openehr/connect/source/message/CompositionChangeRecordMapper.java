@@ -1,8 +1,9 @@
-package com.github.joselalvarez.openehr.connect.source.record;
+package com.github.joselalvarez.openehr.connect.source.message;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.joselalvarez.openehr.connect.source.task.model.EhrStatusEvent;
+import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
+import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChange;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.connect.data.Schema;
@@ -10,17 +11,17 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Slf4j
-public class EhrStatusEventRecordMapper {
+public class CompositionChangeRecordMapper {
 
     private final ObjectMapper canonicalObjectMapper;
+    private final OpenEHRSourceConnectorConfig connectorConfig;
 
-    public Struct mapStruct(EhrStatusEvent source) {
-        EhrStatusEventRecord target = new EhrStatusEventRecord();
+    public Struct mapStruct(CompositionChange source) {
+        CompositionChangeRecord target = new CompositionChangeRecord();
 
         target.setChangeType(source.getChangeType().getValue());
         target.setTimeCommitted(source.getTimeCommitted().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
@@ -29,43 +30,31 @@ public class EhrStatusEventRecordMapper {
         target.setUid(source.getUid().toString());
         target.setVersion(source.getVersion());
 
-        target.setArchetypeId(source.getArchetypeId());
-        target.setEhrStatusId(source.getEhrStatusId() != null ? source.getEhrStatusId().getValue() : null);
+        target.setArchetypeId(source.getArchetypeId() != null ? source.getArchetypeId().getFullId() : null);
+        target.setTemplateId(source.getTemplateId() != null ? source.getTemplateId().getValue() : null);
+        target.setCompositionId(source.getCompositionId() != null ? source.getCompositionId().getValue() : null);
         target.setReplacedId(source.getReplacedId() != null ? source.getReplacedId().getValue() : null);
 
-        target.setSubjectType(source.getSubjectType());
-        target.setSubjectNamespace(source.getSubjectNamespace());
-        target.setSubjectId(source.getSubjectId());
-        target.setSubjectIdScheme(source.getSubjectIdScheme());
-
         try {
-            if (source.getEhrStatus() != null)
-                target.setEhrStatus(canonicalObjectMapper.writeValueAsBytes(source.getEhrStatus()));
+            if (source.getComposition() != null)
+                target.setComposition(canonicalObjectMapper.writeValueAsBytes(source.getComposition()));
         } catch (JsonProcessingException e) {
             log.error("Composition serialization error: {}", e);
         }
         return target.getDelegate();
     }
 
-    public SourceRecord mapRecord(EhrStatusEvent source, String topic) {
+    public SourceRecord mapRecord(CompositionChange source) {
         return new SourceRecord(
                 source.getOffset().getPartitionMap(),
                 source.getOffset().getOffsetMap(),
-                topic,
+                connectorConfig.getCompositionTopic(),
                 null, // Topic partition (default by kafka)
                 Schema.STRING_SCHEMA, // Message key schema
                 source.getEhrId().toString(), // Message key
-                EhrStatusEventRecord.SCHEMA, // Value schema
+                CompositionChangeRecord.SCHEMA, // Value schema
                 mapStruct(source) // Value
         );
-    }
-
-    public List<SourceRecord> mapRecordList(List<EhrStatusEvent> sourceList, String topic) {
-        List<SourceRecord> resultList = new ArrayList<>();
-        for (EhrStatusEvent ce : sourceList) {
-            resultList.add(mapRecord(ce, topic));
-        }
-        return resultList;
     }
 
 }

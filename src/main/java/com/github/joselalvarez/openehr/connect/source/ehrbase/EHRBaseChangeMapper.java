@@ -1,11 +1,10 @@
 package com.github.joselalvarez.openehr.connect.source.ehrbase;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEvent;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEventOffset;
-import com.github.joselalvarez.openehr.connect.source.task.model.ChangeType;
-import com.github.joselalvarez.openehr.connect.source.task.model.CompositionEvent;
-import com.github.joselalvarez.openehr.connect.source.task.model.EhrStatusEvent;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChange;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChangeOffset;
+import com.github.joselalvarez.openehr.connect.source.service.model.ChangeType;
+import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChange;
+import com.github.joselalvarez.openehr.connect.source.service.model.EhrStatusChange;
 import com.nedap.archie.rm.composition.Composition;
 import com.nedap.archie.rm.ehr.EhrStatus;
 import com.nedap.archie.rm.support.identification.GenericId;
@@ -14,15 +13,12 @@ import com.nedap.archie.rm.support.identification.PartyRef;
 import lombok.extern.slf4j.Slf4j;
 import org.ehrbase.openehr.sdk.dbformat.DbToRmFormat;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Slf4j
-public class EHRBaseEventLogMapper {
+public class EHRBaseChangeMapper {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    public CompositionChange mapCompositionChange(EHRBaseChange source) {
 
-    public CompositionEvent mapCompositionEvent(CompositionEvent target, EHRBaseEvent source) {
+        CompositionChange target = new CompositionChange();
 
         target.setChangeType(ChangeType.parse(source.getChangeType()));
         target.setTimeCommitted(source.getTimeCommitted());
@@ -33,11 +29,13 @@ public class EHRBaseEventLogMapper {
 
         Composition composition = DbToRmFormat.reconstructRmObject(Composition.class, new String(source.getAggregate()));
 
+        // Archetype details
         if (composition.getArchetypeDetails() != null) {
             target.setArchetypeId(composition.getArchetypeDetails().getArchetypeId());
             target.setTemplateId(composition.getArchetypeDetails().getTemplateId());
         }
 
+        // Resource
         if (ChangeType.CREATION.equals(target.getChangeType()) ||
                 ChangeType.MODIFICATION.equals(target.getChangeType())) {
 
@@ -52,7 +50,7 @@ public class EHRBaseEventLogMapper {
                             currentVersionId.getCreatingSystemId().getValue(),
                             String.valueOf(source.getSysVersion() - 1)));
                 } catch (Exception e) {
-                    log.error("Invalid composition identifier: {}", e);
+                    log.error("Invalid identifier: {}", e);
                 }
             }
 
@@ -60,7 +58,8 @@ public class EHRBaseEventLogMapper {
             target.setReplacedId(composition.getUid());
         }
 
-        target.setOffset(new EHRBaseEventOffset(
+        // Offset
+        target.setOffset(new EHRBaseChangeOffset(
                 target.getClass(),
                 source.getTablePartition(),
                 source.getTimeCommitted(),
@@ -70,15 +69,9 @@ public class EHRBaseEventLogMapper {
         return target;
     }
 
-    public List<CompositionEvent> mapCompositionEventList(List<EHRBaseEvent> sourceList) {
-        List<CompositionEvent> resultList = new ArrayList<>();
-        for (EHRBaseEvent source : sourceList) {
-            resultList.add(mapCompositionEvent(new CompositionEvent(), source));
-        }
-        return resultList;
-    }
+    public EhrStatusChange mapEhrStatusChange(EHRBaseChange source) {
 
-    public EhrStatusEvent mapEhrStatusEvent(EhrStatusEvent target, EHRBaseEvent source) {
+        EhrStatusChange target = new EhrStatusChange();
 
         target.setChangeType(ChangeType.parse(source.getChangeType()));
         target.setTimeCommitted(source.getTimeCommitted());
@@ -89,11 +82,14 @@ public class EHRBaseEventLogMapper {
 
         EhrStatus status = DbToRmFormat.reconstructRmObject(EhrStatus.class, new String(source.getAggregate()));
 
-        if (status != null) {
+        // Archetype details
+        target.setArchetypeId(status.getArchetypeNodeId());
+
+        // Resource
+        if (ChangeType.CREATION.equals(target.getChangeType()) ||
+                ChangeType.MODIFICATION.equals(target.getChangeType())) {
             target.setEhrStatus(status);
-            target.setArchetypeId(status.getArchetypeNodeId());
             target.setEhrStatusId(status.getUid());
-            // There is no delete event in the ehr status
             if (ChangeType.MODIFICATION.equals(target.getChangeType())) {
                 try {
                     ObjectVersionId currentVersionId = new ObjectVersionId(status.getUid().getValue());
@@ -102,25 +98,28 @@ public class EHRBaseEventLogMapper {
                             currentVersionId.getCreatingSystemId().getValue(),
                             String.valueOf(source.getSysVersion() - 1)));
                 } catch (Exception e) {
-                    log.error("Invalid composition identifier: {}", e);
+                    log.error("Invalid identifier: {}", e);
                 }
             }
+        } else /*DELETED*/{ //In elimination events the recovered ehr_status by the query is the previous one
+            target.setReplacedId(status.getUid());
+        }
 
-            //Subject
-            if (status.getSubject() != null && status.getSubject().getExternalRef() != null) {
-                PartyRef ref = status.getSubject().getExternalRef();
-                target.setSubjectNamespace(ref.getNamespace());
-                target.setSubjectType(ref.getType());
-                if (ref.getId() != null) {
-                    target.setSubjectId(ref.getId().getValue());
-                    if (ref.getId() instanceof GenericId) {
-                        target.setSubjectIdScheme(((GenericId) ref.getId()).getScheme());
-                    }
+        //Subject
+        if (status.getSubject() != null && status.getSubject().getExternalRef() != null) {
+            PartyRef ref = status.getSubject().getExternalRef();
+            target.setSubjectNamespace(ref.getNamespace());
+            target.setSubjectType(ref.getType());
+            if (ref.getId() != null) {
+                target.setSubjectId(ref.getId().getValue());
+                if (ref.getId() instanceof GenericId) {
+                    target.setSubjectIdScheme(((GenericId) ref.getId()).getScheme());
                 }
             }
         }
 
-        target.setOffset(new EHRBaseEventOffset(
+        // Offset
+        target.setOffset(new EHRBaseChangeOffset(
                 target.getClass(),
                 source.getTablePartition(),
                 source.getTimeCommitted(),
@@ -128,14 +127,6 @@ public class EHRBaseEventLogMapper {
                 source.getSysVersion()));
 
         return target;
-    }
-
-    public List<EhrStatusEvent> mapEhrStatusEventList(List<EHRBaseEvent> sourceList) {
-        List<EhrStatusEvent> resultList = new ArrayList<>();
-        for (EHRBaseEvent source : sourceList) {
-            resultList.add(mapEhrStatusEvent(new EhrStatusEvent(), source));
-        }
-        return resultList;
     }
 
 }

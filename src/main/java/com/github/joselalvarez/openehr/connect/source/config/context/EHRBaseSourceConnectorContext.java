@@ -3,13 +3,13 @@ package com.github.joselalvarez.openehr.connect.source.config.context;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseEventLogService;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseEventOffsetFactory;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseChangeLogService;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseRecordOffsetFactory;
 import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseRepository;
-import com.github.joselalvarez.openehr.connect.source.record.CompositionEventRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.record.EhrStatusEventRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.record.RecordPartitionFactory;
-import com.github.joselalvarez.openehr.connect.source.task.OpenEHREventLogService;
+import com.github.joselalvarez.openehr.connect.source.message.CompositionChangeRecordMapper;
+import com.github.joselalvarez.openehr.connect.source.message.EhrStatusChangeRecordMapper;
+import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffsetFactory;
+import com.github.joselalvarez.openehr.connect.source.service.OpenEHRChangeLogService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
@@ -27,11 +27,11 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     private OpenEHRSourceConnectorConfig connectorConfig;
     private HikariDataSource hikariDataSource;
     private EHRBaseRepository ehrBaseRepository;
-    private EHRBaseEventLogService eventLogService;
+    private EHRBaseChangeLogService changeLogService;
     private ObjectMapper canonicalObjectMapper;
-    private CompositionEventRecordMapper compositionEventRecordMapper;
-    private EhrStatusEventRecordMapper ehrStatusEventRecordMapper;
-    private EHRBaseEventOffsetFactory eventLogOffsetFactory;
+    private CompositionChangeRecordMapper compositionChangeRecordMapper;
+    private EhrStatusChangeRecordMapper ehrStatusChangeRecordMapper;
+    private EHRBaseRecordOffsetFactory recordOffsetFactory;
 
     public EHRBaseSourceConnectorContext(OpenEHRSourceConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
@@ -39,13 +39,13 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
         hikariDataSource = new HikariDataSource(new HikariConfig(connectorConfig.getJdbcProperties()));
         log.info("Connector[name={}]: EHRBase datasource created", connectorConfig.getConnectorName());
         // Beans
-        eventLogOffsetFactory = new EHRBaseEventOffsetFactory(connectorConfig);
+        recordOffsetFactory = new EHRBaseRecordOffsetFactory(connectorConfig);
         ehrBaseRepository = new EHRBaseRepository(connectorConfig, new QueryRunner(hikariDataSource));
-        eventLogService = new EHRBaseEventLogService(ehrBaseRepository);
+        changeLogService = new EHRBaseChangeLogService(ehrBaseRepository);
         canonicalObjectMapper = CanonicalJson.MARSHAL_OM;
         canonicalObjectMapper.disable(SerializationFeature.INDENT_OUTPUT);
-        compositionEventRecordMapper = new CompositionEventRecordMapper(canonicalObjectMapper);
-        ehrStatusEventRecordMapper = new EhrStatusEventRecordMapper(canonicalObjectMapper);
+        compositionChangeRecordMapper = new CompositionChangeRecordMapper(canonicalObjectMapper, connectorConfig);
+        ehrStatusChangeRecordMapper = new EhrStatusChangeRecordMapper(canonicalObjectMapper, connectorConfig);
 
     }
 
@@ -55,8 +55,8 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     }
 
     @Override
-    public OpenEHREventLogService getOpenEHREventLogService() {
-        return eventLogService;
+    public OpenEHRChangeLogService getOpenEHREventLogService() {
+        return changeLogService;
     }
 
     @Override
@@ -65,18 +65,18 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     }
 
     @Override
-    public CompositionEventRecordMapper getCompositionEventRecordMapper() {
-        return compositionEventRecordMapper;
+    public CompositionChangeRecordMapper getCompositionChangeRecordMapper() {
+        return compositionChangeRecordMapper;
     }
 
     @Override
-    public EhrStatusEventRecordMapper getEhrStatusEventRecordMapper() {
-        return ehrStatusEventRecordMapper;
+    public EhrStatusChangeRecordMapper getEhrStatusChangeRecordMapper() {
+        return ehrStatusChangeRecordMapper;
     }
 
     @Override
-    public RecordPartitionFactory getRecordPartitionFactory() {
-        return eventLogOffsetFactory;
+    public RecordOffsetFactory getRecordOffsetFactory() {
+        return recordOffsetFactory;
     }
 
     @Override

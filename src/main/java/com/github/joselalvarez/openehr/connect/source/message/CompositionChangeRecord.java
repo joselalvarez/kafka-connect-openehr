@@ -1,13 +1,14 @@
-package com.github.joselalvarez.openehr.connect.source.record;
+package com.github.joselalvarez.openehr.connect.source.message;
 
+import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChange;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 
-public class CompositionEventRecord {
+public class CompositionChangeRecord {
 
     public static final String TYPE = "_type";
-    public static final String TYPE_VALUE = "COMPOSITION_EVENT_RECORD";
+    public static final String TYPE_NAME = "COMPOSITION_CHANGE";
 
     public static final String CHANGE_TYPE_FIELD = "change_type";
     public static final String TIME_COMMITTED_FIELD = "time_committed";
@@ -26,7 +27,7 @@ public class CompositionEventRecord {
 
     static {
         SCHEMA = SchemaBuilder.struct()
-                        .name(CompositionEventRecord.class.getCanonicalName())
+                        .name(CompositionChange.class.getCanonicalName())
                         .field(CHANGE_TYPE_FIELD, Schema.STRING_SCHEMA)
                         .field(TIME_COMMITTED_FIELD, Schema.STRING_SCHEMA)
                         .field(EHR_ID_FIELD, Schema.STRING_SCHEMA)
@@ -42,11 +43,11 @@ public class CompositionEventRecord {
 
     private Struct delegate;
 
-    public CompositionEventRecord() {
+    public CompositionChangeRecord() {
         this.delegate = new Struct(SCHEMA);
     }
 
-    public CompositionEventRecord(Struct delegate) {
+    public CompositionChangeRecord(Struct delegate) {
         this.delegate = delegate;
     }
 
@@ -55,7 +56,7 @@ public class CompositionEventRecord {
     }
 
     public static boolean isSchema(Schema schema) {
-        return schema != null && CompositionEventRecord.class.getCanonicalName().equals(schema.name());
+        return schema != null && SCHEMA.name().equals(schema.name());
     }
 
     public void setChangeType(String changeType) {

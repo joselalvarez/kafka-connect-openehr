@@ -1,6 +1,6 @@
 package com.github.joselalvarez.openehr.connect.source.ehrbase.entity;
 
-import com.github.joselalvarez.openehr.connect.source.record.RecordOffset;
+import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffset;
 import lombok.Getter;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Getter
 @ToString
-public class EHRBaseEventOffset implements RecordOffset {
+public class EHRBaseChangeOffset implements RecordOffset {
 
     private static String TYPE_TAG = "t";
     private static String PARTITION_TAG = "p";
@@ -29,7 +29,7 @@ public class EHRBaseEventOffset implements RecordOffset {
     private UUID uid;
     private Integer version;
 
-    private EHRBaseEventOffset(String type, int partition, ZonedDateTime date, UUID uid, Integer version){
+    private EHRBaseChangeOffset(String type, int partition, ZonedDateTime date, UUID uid, Integer version){
         this.type = type;
         this.partition = partition;
         this.date = date;
@@ -37,11 +37,11 @@ public class EHRBaseEventOffset implements RecordOffset {
         this.version = version;
     }
 
-    public EHRBaseEventOffset(Class<?> type, int partition, ZonedDateTime date, UUID uid, Integer version){
+    public EHRBaseChangeOffset(Class<?> type, int partition, ZonedDateTime date, UUID uid, Integer version){
         this(type != null ? type.getSimpleName() : null, partition, date, uid, version);
     }
 
-    public EHRBaseEventOffset(Class<?> type, int partition) {
+    public EHRBaseChangeOffset(Class<?> type, int partition) {
         this(type, partition, null, null ,null);
     }
 
@@ -49,8 +49,8 @@ public class EHRBaseEventOffset implements RecordOffset {
         return date == null || uid == null || version == null;
     }
 
-    public static EHRBaseEventOffset from(Map<String, ?> partition, Map<String, ?> offset) {
-        return new EHRBaseEventOffset(
+    public static EHRBaseChangeOffset from(Map<String, ?> partition, Map<String, ?> offset) {
+        return new EHRBaseChangeOffset(
                 partition.get(TYPE_TAG) != null ? partition.get(TYPE_TAG).toString() : null,
                 Integer.valueOf(partition.get(PARTITION_TAG).toString()),
                 offset.get(DATE_TAG) != null ? ZonedDateTime.parse(offset.get(DATE_TAG).toString(), DateTimeFormatter.ISO_OFFSET_DATE_TIME) : null,
@@ -59,7 +59,7 @@ public class EHRBaseEventOffset implements RecordOffset {
         );
     }
 
-    public static EHRBaseEventOffset from(RecordOffset offset) {
+    public static EHRBaseChangeOffset from(RecordOffset offset) {
         return offset != null ? from(offset.getPartitionMap(), offset.getOffsetMap()) : null;
     }
 
@@ -83,10 +83,4 @@ public class EHRBaseEventOffset implements RecordOffset {
         return Collections.unmodifiableMap(map);
     }
 
-    @Override
-    public boolean supports(Class<?> clazz) {
-        if (type == null) return true;
-        if (clazz == null) return false;
-        return type.equals(clazz.getSimpleName());
-    }
 }

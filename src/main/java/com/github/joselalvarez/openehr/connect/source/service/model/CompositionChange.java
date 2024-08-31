@@ -1,6 +1,6 @@
-package com.github.joselalvarez.openehr.connect.source.task.model;
+package com.github.joselalvarez.openehr.connect.source.service.model;
 
-import com.github.joselalvarez.openehr.connect.source.record.RecordOffset;
+import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffset;
 import com.nedap.archie.rm.archetyped.TemplateId;
 import com.nedap.archie.rm.composition.Composition;
 import com.nedap.archie.rm.support.identification.ArchetypeID;
@@ -11,7 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Data
-public class CompositionEvent {
+public class CompositionChange {
 
     private ChangeType changeType;
     private ZonedDateTime timeCommitted;

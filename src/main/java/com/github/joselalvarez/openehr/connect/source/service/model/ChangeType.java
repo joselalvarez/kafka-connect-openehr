@@ -1,4 +1,4 @@
-package com.github.joselalvarez.openehr.connect.source.task.model;
+package com.github.joselalvarez.openehr.connect.source.service.model;
 
 import org.apache.commons.lang3.StringUtils;
 

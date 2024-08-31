@@ -1,10 +1,11 @@
 package com.github.joselalvarez.openehr.connect.source.ehrbase;
 
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEvent;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseEventOffset;
-import com.github.joselalvarez.openehr.connect.source.record.RecordOffset;
-import com.github.joselalvarez.openehr.connect.source.task.model.EventFilter;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChange;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChangeOffset;
+import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffset;
+import com.github.joselalvarez.openehr.connect.source.service.model.ChangeRequest;
+import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChangeRequest;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
@@ -41,26 +42,26 @@ public class EHRBaseRepository {
             SQL_TMPL = mustacheFactory.compile(SQL_TMPL_PATH);
         }
 
-        public static Query buildQuery(EventFilter filter, int tablePartitionSize, long pollSize) {
+        public static Query buildQuery(CompositionChangeRequest request, int tablePartitionSize) {
             StringWriter writer = new StringWriter();
             List<Object> queryParams = new ArrayList<>();
 
             queryParams.add(tablePartitionSize);
 
-            if (filter.getFromDate() != null)
-                queryParams.add(Timestamp.from(filter.getFromDate().toInstant()));
+            if (request.getFromDate() != null)
+                queryParams.add(Timestamp.from(request.getFromDate().toInstant()));
 
-            if (filter.getToDate() != null)
-                queryParams.add(Timestamp.from(filter.getToDate().toInstant()));
+            if (request.getToDate() != null)
+                queryParams.add(Timestamp.from(request.getToDate().toInstant()));
 
-            if (StringUtils.isNotBlank(filter.getTemplateId()))
-                queryParams.add(filter.getTemplateId());
+            if (StringUtils.isNotBlank(request.getTemplateId()))
+                queryParams.add(request.getTemplateId());
 
-            if (StringUtils.isNotBlank(filter.getRootConcept()))
-                queryParams.add(filter.getRootConcept());
+            if (StringUtils.isNotBlank(request.getRootConcept()))
+                queryParams.add(request.getRootConcept());
 
-            for (RecordOffset o : filter.getOffsetList()) {
-                EHRBaseEventOffset offset = EHRBaseEventOffset.from(o);
+            for (RecordOffset o : request.getOffsetList()) {
+                EHRBaseChangeOffset offset = EHRBaseChangeOffset.from(o);
                 queryParams.add(offset.getPartition());
                 if (!offset.isEmpty()) {
                     Timestamp t = Timestamp.from(offset.getDate().toInstant());
@@ -73,9 +74,10 @@ public class EHRBaseRepository {
                 }
             }
 
-            queryParams.add(pollSize);
+            if (request.getMaxPoll() != null)
+                queryParams.add(request.getMaxPoll());
 
-            SQL_TMPL.execute(writer, filter);
+            SQL_TMPL.execute(writer, request);
             log.debug(writer.toString());
 
             return new Query(writer.toString(),queryParams.toArray());
@@ -91,20 +93,20 @@ public class EHRBaseRepository {
             SQL_TMPL = mustacheFactory.compile(SQL_TMPL_PATH);
         }
 
-        public static Query buildQuery(EventFilter filter, int tablePartitionSize, long pollSize) {
+        public static Query buildQuery(ChangeRequest request, int tablePartitionSize) {
             StringWriter writer = new StringWriter();
             List<Object> queryParams = new ArrayList<>();
 
             queryParams.add(tablePartitionSize);
 
-            if (filter.getFromDate() != null)
-                queryParams.add(Timestamp.from(filter.getFromDate().toInstant()));
+            if (request.getFromDate() != null)
+                queryParams.add(Timestamp.from(request.getFromDate().toInstant()));
 
-            if (filter.getToDate() != null)
-                queryParams.add(Timestamp.from(filter.getToDate().toInstant()));
+            if (request.getToDate() != null)
+                queryParams.add(Timestamp.from(request.getToDate().toInstant()));
 
-            for (RecordOffset o : filter.getOffsetList()) {
-                EHRBaseEventOffset offset = EHRBaseEventOffset.from(o);
+            for (RecordOffset o : request.getOffsetList()) {
+                EHRBaseChangeOffset offset = EHRBaseChangeOffset.from(o);
                 queryParams.add(offset.getPartition());
                 if (!offset.isEmpty()) {
                     Timestamp t = Timestamp.from(offset.getDate().toInstant());
@@ -117,9 +119,10 @@ public class EHRBaseRepository {
                 }
             }
 
-            queryParams.add(pollSize);
+            if (request.getMaxPoll() != null)
+                queryParams.add(request.getMaxPoll());
 
-            SQL_TMPL.execute(writer, filter);
+            SQL_TMPL.execute(writer, request);
             log.debug(writer.toString());
 
             return new Query(writer.toString(),queryParams.toArray());
@@ -129,21 +132,21 @@ public class EHRBaseRepository {
 
     private final OpenEHRSourceConnectorConfig connectorConfig;
     private final QueryRunner queryRunner;
-    private final EHRBaseEvent.BeanListHandler aggregateEventHandler;
+    private final EHRBaseChange.BeanListHandler aggregateEventHandler;
 
     public EHRBaseRepository(OpenEHRSourceConnectorConfig connectorConfig, QueryRunner queryRunner) {
         this.connectorConfig = connectorConfig;
         this.queryRunner = queryRunner;
-        this.aggregateEventHandler = new EHRBaseEvent.BeanListHandler();
+        this.aggregateEventHandler = new EHRBaseChange.BeanListHandler();
     }
 
-    public List<EHRBaseEvent> findCompositionEventList(EventFilter filter) throws SQLException {
-        Query query = CompositionAggregateEventListQueryHelper.buildQuery(filter, connectorConfig.getTablePartitionSize(), connectorConfig.getPollBatchSize());
+    public List<EHRBaseChange> findCompositionChanges(CompositionChangeRequest request) throws SQLException {
+        Query query = CompositionAggregateEventListQueryHelper.buildQuery(request, connectorConfig.getTablePartitionSize());
         return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
     }
 
-    public List<EHRBaseEvent> findEhrStatusEventList(EventFilter filter) throws SQLException {
-        Query query = EhrStatusAggregateEventListQueryHelper.buildQuery(filter, connectorConfig.getTablePartitionSize(), connectorConfig.getPollBatchSize());
+    public List<EHRBaseChange> findEhrStatusChanges(ChangeRequest request) throws SQLException {
+        Query query = EhrStatusAggregateEventListQueryHelper.buildQuery(request, connectorConfig.getTablePartitionSize());
         return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
     }
 }

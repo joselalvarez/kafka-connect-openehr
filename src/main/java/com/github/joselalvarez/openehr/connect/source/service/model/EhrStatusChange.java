@@ -1,6 +1,6 @@
-package com.github.joselalvarez.openehr.connect.source.task.model;
+package com.github.joselalvarez.openehr.connect.source.service.model;
 
-import com.github.joselalvarez.openehr.connect.source.record.RecordOffset;
+import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffset;
 import com.nedap.archie.rm.ehr.EhrStatus;
 import com.nedap.archie.rm.support.identification.UIDBasedId;
 import lombok.Data;
@@ -9,7 +9,7 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Data
-public class EhrStatusEvent {
+public class EhrStatusChange {
 
     private ChangeType changeType;
     private ZonedDateTime timeCommitted;

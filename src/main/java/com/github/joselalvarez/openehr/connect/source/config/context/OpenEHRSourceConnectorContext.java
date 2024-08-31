@@ -1,10 +1,10 @@
 package com.github.joselalvarez.openehr.connect.source.config.context;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.joselalvarez.openehr.connect.source.record.CompositionEventRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.record.EhrStatusEventRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.record.RecordPartitionFactory;
-import com.github.joselalvarez.openehr.connect.source.task.OpenEHREventLogService;
+import com.github.joselalvarez.openehr.connect.source.message.CompositionChangeRecordMapper;
+import com.github.joselalvarez.openehr.connect.source.message.EhrStatusChangeRecordMapper;
+import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffsetFactory;
+import com.github.joselalvarez.openehr.connect.source.service.OpenEHRChangeLogService;
 
 import javax.sql.DataSource;
 
@@ -12,9 +12,9 @@ public interface OpenEHRSourceConnectorContext {
     void close();
     boolean isClosed();
     DataSource getEHRBaseDataSource();
-    OpenEHREventLogService getOpenEHREventLogService();
+    OpenEHRChangeLogService getOpenEHREventLogService();
     ObjectMapper getCanonicalObjectMapper();
-    CompositionEventRecordMapper getCompositionEventRecordMapper();
-    EhrStatusEventRecordMapper getEhrStatusEventRecordMapper();
-    RecordPartitionFactory getRecordPartitionFactory();
+    CompositionChangeRecordMapper getCompositionChangeRecordMapper();
+    EhrStatusChangeRecordMapper getEhrStatusChangeRecordMapper();
+    RecordOffsetFactory getRecordOffsetFactory();
 }

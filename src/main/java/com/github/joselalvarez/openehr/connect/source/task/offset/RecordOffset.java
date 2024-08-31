@@ -1,9 +1,8 @@
-package com.github.joselalvarez.openehr.connect.source.record;
+package com.github.joselalvarez.openehr.connect.source.task.offset;
 
 import java.util.Map;
 
 public interface RecordOffset {
-    boolean supports(Class<?> clazz);
     Map<String, ?> getPartitionMap();
     Map<String, ?> getOffsetMap();
 }

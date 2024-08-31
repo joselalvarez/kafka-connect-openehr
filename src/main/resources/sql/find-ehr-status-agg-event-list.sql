@@ -4,7 +4,10 @@ WITH ehr_status_audit_details_view AS (
         c.ehr_id,
         ad.change_type,
         ad.time_committed,
-        sys_version,
+        CASE
+            WHEN ad.change_type = 'deleted' THEN cv.sys_version - 1
+            ELSE cv.sys_version
+        END AS sys_version,
         sv.archived,
         encode(substring(c.ehr_id::text, 0, 5)::bytea, 'hex')::int % ? AS table_partition
     FROM
@@ -35,7 +38,10 @@ SELECT
     ehr_id,
     change_type,
     time_committed,
-    sys_version,
+    CASE
+        WHEN change_type = 'deleted' THEN sys_version + 1
+        ELSE sys_version
+    END AS sys_version,
     jsonb_object_agg(coalesce(path, ''), fragment) AS aggregate
 FROM (
     SELECT

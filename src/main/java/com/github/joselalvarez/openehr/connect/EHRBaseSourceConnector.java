@@ -1,7 +1,7 @@
 package com.github.joselalvarez.openehr.connect;
 
 import com.github.joselalvarez.openehr.connect.common.ConnectorInfo;
-import com.github.joselalvarez.openehr.connect.source.OpenEHRSourceTask;
+import com.github.joselalvarez.openehr.connect.source.task.OpenEHRSourceTask;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.config.ConfigDef;

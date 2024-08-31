@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class EHRBaseEvent {
+public class EHRBaseChange {
 
     private int tablePartition;
 
@@ -26,7 +26,7 @@ public class EHRBaseEvent {
     private Integer sysVersion;
     private byte [] aggregate;
 
-    public static class BeanListHandler implements ResultSetHandler<List<EHRBaseEvent>> {
+    public static class BeanListHandler implements ResultSetHandler<List<EHRBaseChange>> {
 
         private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -38,7 +38,7 @@ public class EHRBaseEvent {
         public static final String SYS_VERSION = "sys_version";
         public static final String AGGREGATE = "aggregate";
 
-        public EHRBaseEvent map(EHRBaseEvent target, ResultSet source) throws SQLException {
+        public EHRBaseChange map(EHRBaseChange target, ResultSet source) throws SQLException {
             target.setTablePartition(source.getInt(TABLE_PARTITION));
             String uid = source.getString(UID);
             target.setUid(StringUtils.isNotBlank(uid) ? UUID.fromString(uid) : null);
@@ -53,10 +53,10 @@ public class EHRBaseEvent {
         }
 
         @Override
-        public List<EHRBaseEvent> handle(ResultSet rs) throws SQLException {
-            List<EHRBaseEvent> resultList = new ArrayList<>();
+        public List<EHRBaseChange> handle(ResultSet rs) throws SQLException {
+            List<EHRBaseChange> resultList = new ArrayList<>();
             while (rs.next()){
-                resultList.add(map(new EHRBaseEvent(), rs));
+                resultList.add(map(new EHRBaseChange(), rs));
             }
             return resultList;
         }

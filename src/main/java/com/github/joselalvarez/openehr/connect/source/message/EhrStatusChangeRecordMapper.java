@@ -1,8 +1,9 @@
-package com.github.joselalvarez.openehr.connect.source.record;
+package com.github.joselalvarez.openehr.connect.source.message;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.joselalvarez.openehr.connect.source.task.model.CompositionEvent;
+import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
+import com.github.joselalvarez.openehr.connect.source.service.model.EhrStatusChange;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.connect.data.Schema;
@@ -10,17 +11,16 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 
 @RequiredArgsConstructor
 @Slf4j
-public class CompositionEventRecordMapper {
+public class EhrStatusChangeRecordMapper {
 
     private final ObjectMapper canonicalObjectMapper;
+    private final OpenEHRSourceConnectorConfig connectorConfig;
 
-    public Struct mapStruct(CompositionEvent source) {
-        CompositionEventRecord target = new CompositionEventRecord();
+    public Struct mapStruct(EhrStatusChange source) {
+        EhrStatusChangeRecord target = new EhrStatusChangeRecord();
 
         target.setChangeType(source.getChangeType().getValue());
         target.setTimeCommitted(source.getTimeCommitted().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
@@ -29,38 +29,35 @@ public class CompositionEventRecordMapper {
         target.setUid(source.getUid().toString());
         target.setVersion(source.getVersion());
 
-        target.setArchetypeId(source.getArchetypeId() != null ? source.getArchetypeId().getFullId() : null);
-        target.setTemplateId(source.getTemplateId() != null ? source.getTemplateId().getValue() : null);
-        target.setCompositionId(source.getCompositionId() != null ? source.getCompositionId().getValue() : null);
+        target.setArchetypeId(source.getArchetypeId());
+        target.setEhrStatusId(source.getEhrStatusId() != null ? source.getEhrStatusId().getValue() : null);
         target.setReplacedId(source.getReplacedId() != null ? source.getReplacedId().getValue() : null);
 
+        target.setSubjectType(source.getSubjectType());
+        target.setSubjectNamespace(source.getSubjectNamespace());
+        target.setSubjectId(source.getSubjectId());
+        target.setSubjectIdScheme(source.getSubjectIdScheme());
+
         try {
-            if (source.getComposition() != null)
-                target.setComposition(canonicalObjectMapper.writeValueAsBytes(source.getComposition()));
+            if (source.getEhrStatus() != null)
+                target.setEhrStatus(canonicalObjectMapper.writeValueAsBytes(source.getEhrStatus()));
         } catch (JsonProcessingException e) {
             log.error("Composition serialization error: {}", e);
         }
         return target.getDelegate();
     }
 
-    public SourceRecord mapRecord(CompositionEvent source, String topic) {
+    public SourceRecord mapRecord(EhrStatusChange source) {
         return new SourceRecord(
                 source.getOffset().getPartitionMap(),
                 source.getOffset().getOffsetMap(),
-                topic,
+                connectorConfig.getEhrTopic(),
                 null, // Topic partition (default by kafka)
                 Schema.STRING_SCHEMA, // Message key schema
                 source.getEhrId().toString(), // Message key
-                CompositionEventRecord.SCHEMA, // Value schema
+                EhrStatusChangeRecord.SCHEMA, // Value schema
                 mapStruct(source) // Value
         );
     }
 
-    public List<SourceRecord> mapRecordList(List<CompositionEvent> sourceList, String topic) {
-        List<SourceRecord> resultList = new ArrayList<>();
-        for (CompositionEvent ce : sourceList) {
-            resultList.add(mapRecord(ce, topic));
-        }
-        return resultList;
-    }
 }
