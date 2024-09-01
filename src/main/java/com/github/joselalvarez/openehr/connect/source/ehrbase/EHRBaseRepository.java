@@ -2,8 +2,8 @@ package com.github.joselalvarez.openehr.connect.source.ehrbase;
 
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
 import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChange;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChangeOffset;
-import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffset;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChangePartitionOffset;
+import com.github.joselalvarez.openehr.connect.source.task.offset.PartitionOffset;
 import com.github.joselalvarez.openehr.connect.source.service.model.ChangeRequest;
 import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChangeRequest;
 import com.github.mustachejava.DefaultMustacheFactory;
@@ -35,7 +35,7 @@ public class EHRBaseRepository {
 
     private static class CompositionAggregateEventListQueryHelper {
 
-        private static final String SQL_TMPL_PATH = "sql/find-composition-agg-event-list.sql";
+        private static final String SQL_TMPL_PATH = "sql/find-composition-change-agg-list.sql";
         private static final Mustache SQL_TMPL;
 
         static {
@@ -60,22 +60,21 @@ public class EHRBaseRepository {
             if (StringUtils.isNotBlank(request.getRootConcept()))
                 queryParams.add(request.getRootConcept());
 
-            for (RecordOffset o : request.getOffsetList()) {
-                EHRBaseChangeOffset offset = EHRBaseChangeOffset.from(o);
-                queryParams.add(offset.getPartition());
-                if (!offset.isEmpty()) {
-                    Timestamp t = Timestamp.from(offset.getDate().toInstant());
+            for (PartitionOffset o : request.getPartitionOffsets()) {
+                EHRBaseChangePartitionOffset partitionOffset = EHRBaseChangePartitionOffset.from(o);
+                queryParams.add(partitionOffset.getPartition());
+                if (!partitionOffset.isEmpty()) {
+                    Timestamp t = Timestamp.from(partitionOffset.getDate().toInstant());
                     queryParams.add(t);
                     queryParams.add(t);
-                    queryParams.add(offset.getUid());
+                    queryParams.add(partitionOffset.getUid());
                     queryParams.add(t);
-                    queryParams.add(offset.getUid());
-                    queryParams.add(offset.getVersion());
+                    queryParams.add(partitionOffset.getUid());
+                    queryParams.add(partitionOffset.getVersion());
                 }
             }
 
-            if (request.getMaxPoll() != null)
-                queryParams.add(request.getMaxPoll());
+            queryParams.add(request.getMaxPoll());
 
             SQL_TMPL.execute(writer, request);
             log.debug(writer.toString());
@@ -86,7 +85,7 @@ public class EHRBaseRepository {
 
     private static class EhrStatusAggregateEventListQueryHelper {
 
-        private static final String SQL_TMPL_PATH = "sql/find-ehr-status-agg-event-list.sql";
+        private static final String SQL_TMPL_PATH = "sql/find-ehr-status-change-agg-list.sql";
         private static final Mustache SQL_TMPL;
 
         static {
@@ -105,22 +104,21 @@ public class EHRBaseRepository {
             if (request.getToDate() != null)
                 queryParams.add(Timestamp.from(request.getToDate().toInstant()));
 
-            for (RecordOffset o : request.getOffsetList()) {
-                EHRBaseChangeOffset offset = EHRBaseChangeOffset.from(o);
-                queryParams.add(offset.getPartition());
-                if (!offset.isEmpty()) {
-                    Timestamp t = Timestamp.from(offset.getDate().toInstant());
+            for (PartitionOffset o : request.getPartitionOffsets()) {
+                EHRBaseChangePartitionOffset partitionOffset = EHRBaseChangePartitionOffset.from(o);
+                queryParams.add(partitionOffset.getPartition());
+                if (!partitionOffset.isEmpty()) {
+                    Timestamp t = Timestamp.from(partitionOffset.getDate().toInstant());
                     queryParams.add(t);
                     queryParams.add(t);
-                    queryParams.add(offset.getUid());
+                    queryParams.add(partitionOffset.getUid());
                     queryParams.add(t);
-                    queryParams.add(offset.getUid());
-                    queryParams.add(offset.getVersion());
+                    queryParams.add(partitionOffset.getUid());
+                    queryParams.add(partitionOffset.getVersion());
                 }
             }
 
-            if (request.getMaxPoll() != null)
-                queryParams.add(request.getMaxPoll());
+            queryParams.add(request.getMaxPoll());
 
             SQL_TMPL.execute(writer, request);
             log.debug(writer.toString());
@@ -129,24 +127,23 @@ public class EHRBaseRepository {
         }
     }
 
-
     private final OpenEHRSourceConnectorConfig connectorConfig;
     private final QueryRunner queryRunner;
-    private final EHRBaseChange.BeanListHandler aggregateEventHandler;
+    private final EHRBaseChange.BeanListHandler beanListHandler;
 
     public EHRBaseRepository(OpenEHRSourceConnectorConfig connectorConfig, QueryRunner queryRunner) {
         this.connectorConfig = connectorConfig;
         this.queryRunner = queryRunner;
-        this.aggregateEventHandler = new EHRBaseChange.BeanListHandler();
+        this.beanListHandler = new EHRBaseChange.BeanListHandler();
     }
 
     public List<EHRBaseChange> findCompositionChanges(CompositionChangeRequest request) throws SQLException {
         Query query = CompositionAggregateEventListQueryHelper.buildQuery(request, connectorConfig.getTablePartitionSize());
-        return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
+        return queryRunner.query(query.getSql(), beanListHandler, query.getParams());
     }
 
     public List<EHRBaseChange> findEhrStatusChanges(ChangeRequest request) throws SQLException {
         Query query = EhrStatusAggregateEventListQueryHelper.buildQuery(request, connectorConfig.getTablePartitionSize());
-        return queryRunner.query(query.getSql(), aggregateEventHandler, query.getParams());
+        return queryRunner.query(query.getSql(), beanListHandler, query.getParams());
     }
 }

@@ -1,21 +1,21 @@
 package com.github.joselalvarez.openehr.connect.source.ehrbase;
 
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChangeOffset;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChangePartitionOffset;
 import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChange;
 import com.github.joselalvarez.openehr.connect.source.service.model.EhrStatusChange;
-import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffset;
-import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffsetFactory;
+import com.github.joselalvarez.openehr.connect.source.task.offset.PartitionOffset;
+import com.github.joselalvarez.openehr.connect.source.task.offset.PartitionOffsetFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class EHRBaseRecordOffsetFactory implements RecordOffsetFactory {
+public class EHRBasePartitionOffsetFactory implements PartitionOffsetFactory {
 
     private OpenEHRSourceConnectorConfig connectorConfig;
 
-    public EHRBaseRecordOffsetFactory(OpenEHRSourceConnectorConfig connectorConfig) {
+    public EHRBasePartitionOffsetFactory(OpenEHRSourceConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
     }
 
@@ -23,7 +23,7 @@ public class EHRBaseRecordOffsetFactory implements RecordOffsetFactory {
         List<Map<String, ?>> partitions = new ArrayList<>();
         for (int i = 0; i < connectorConfig.getTablePartitionSize(); i++) {
             if (i % connectorConfig.getTasksConfigured() == taskId) {
-                partitions.add(new EHRBaseChangeOffset(type, i).getPartitionMap());
+                partitions.add(new EHRBaseChangePartitionOffset(type, i).getPartitionMap());
             }
         }
         return partitions;
@@ -40,7 +40,7 @@ public class EHRBaseRecordOffsetFactory implements RecordOffsetFactory {
     }
 
     @Override
-    public RecordOffset buildRecordOffset(Map<String, ?> partition, Map<String, ?> offset) {
-        return EHRBaseChangeOffset.from(partition, offset);
+    public PartitionOffset buildPartitionOffset(Map<String, ?> partition, Map<String, ?> offset) {
+        return EHRBaseChangePartitionOffset.from(partition, offset);
     }
 }

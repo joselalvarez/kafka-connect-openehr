@@ -65,14 +65,14 @@ FROM (
             {{#toDate}} AND time_committed <= ? {{/toDate}}
             AND (
                 false
-                {{#offsetList}}
+                {{#partitionOffsets}}
                     OR (table_partition = ?
                     {{^empty}}
                         AND (time_committed > ?
                         OR (time_committed = ? AND uid > ?)
                         OR (time_committed = ? AND uid = ? AND sys_version > ?))
                     {{/empty}})
-                {{/offsetList}}
+                {{/partitionOffsets}}
             )
         ORDER BY
             time_committed ASC,

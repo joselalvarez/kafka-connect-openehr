@@ -1,6 +1,6 @@
 package com.github.joselalvarez.openehr.connect.source.service.model;
 
-import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffset;
+import com.github.joselalvarez.openehr.connect.source.task.offset.PartitionOffset;
 import com.nedap.archie.rm.ehr.EhrStatus;
 import com.nedap.archie.rm.support.identification.UIDBasedId;
 import lombok.Data;
@@ -29,6 +29,6 @@ public class EhrStatusChange {
 
     private EhrStatus ehrStatus;
 
-    private RecordOffset offset;
+    private PartitionOffset partitionOffset;
 
 }

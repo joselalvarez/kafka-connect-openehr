@@ -1,7 +1,8 @@
 package com.github.joselalvarez.openehr.connect.source.ehrbase;
 
 import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChange;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChangeOffset;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.entity.EHRBaseChangePartitionOffset;
+import com.github.joselalvarez.openehr.connect.source.exception.OpenEHRSourceConnectException;
 import com.github.joselalvarez.openehr.connect.source.service.model.ChangeType;
 import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChange;
 import com.github.joselalvarez.openehr.connect.source.service.model.EhrStatusChange;
@@ -27,44 +28,46 @@ public class EHRBaseChangeMapper {
         target.setUid(source.getUid());
         target.setVersion(source.getSysVersion());
 
-        Composition composition = DbToRmFormat.reconstructRmObject(Composition.class, new String(source.getAggregate()));
-
-        // Archetype details
-        if (composition.getArchetypeDetails() != null) {
-            target.setArchetypeId(composition.getArchetypeDetails().getArchetypeId());
-            target.setTemplateId(composition.getArchetypeDetails().getTemplateId());
-        }
-
-        // Resource
-        if (ChangeType.CREATION.equals(target.getChangeType()) ||
-                ChangeType.MODIFICATION.equals(target.getChangeType())) {
-
-            target.setComposition(composition);
-            target.setCompositionId(composition.getUid());
-
-            if (ChangeType.MODIFICATION.equals(target.getChangeType())) {
-                try {
-                    ObjectVersionId currentVersionId = new ObjectVersionId(composition.getUid().getValue());
-                    target.setReplacedId(new ObjectVersionId(
-                            currentVersionId.getObjectId().getValue(),
-                            currentVersionId.getCreatingSystemId().getValue(),
-                            String.valueOf(source.getSysVersion() - 1)));
-                } catch (Exception e) {
-                    log.error("Invalid identifier: {}", e);
-                }
-            }
-
-        } else /*DELETED*/{ //In elimination events the recovered composition by the query is the previous one
-            target.setReplacedId(composition.getUid());
-        }
-
-        // Offset
-        target.setOffset(new EHRBaseChangeOffset(
+        // Partition offset
+        target.setPartitionOffset(new EHRBaseChangePartitionOffset(
                 target.getClass(),
                 source.getTablePartition(),
                 source.getTimeCommitted(),
                 source.getUid(),
                 source.getSysVersion()));
+
+        try {
+            Composition composition = DbToRmFormat.reconstructRmObject(Composition.class, new String(source.getAggregate()));
+
+            // Archetype details
+            if (composition.getArchetypeDetails() != null) {
+                target.setArchetypeId(composition.getArchetypeDetails().getArchetypeId());
+                target.setTemplateId(composition.getArchetypeDetails().getTemplateId());
+            }
+
+            // Resource
+            if (ChangeType.CREATION.equals(target.getChangeType()) ||
+                    ChangeType.MODIFICATION.equals(target.getChangeType())) {
+
+                target.setComposition(composition);
+                target.setCompositionId(composition.getUid());
+
+                if (ChangeType.MODIFICATION.equals(target.getChangeType())) {
+                    ObjectVersionId currentVersionId = new ObjectVersionId(composition.getUid().getValue());
+                    target.setReplacedId(new ObjectVersionId(
+                            currentVersionId.getObjectId().getValue(),
+                            currentVersionId.getCreatingSystemId().getValue(),
+                            String.valueOf(source.getSysVersion() - 1)));
+                }
+
+            } else /*DELETED*/ { //In elimination events the recovered composition by the query is the previous one
+                target.setReplacedId(composition.getUid());
+            }
+
+        }catch (Exception e) {
+            log.error("Mapping error: {}", e);
+            OpenEHRSourceConnectException.mappingError(e, target.getPartitionOffset());
+        }
 
         return target;
     }
@@ -80,51 +83,52 @@ public class EHRBaseChangeMapper {
         target.setUid(source.getUid());
         target.setVersion(source.getSysVersion());
 
-        EhrStatus status = DbToRmFormat.reconstructRmObject(EhrStatus.class, new String(source.getAggregate()));
-
-        // Archetype details
-        target.setArchetypeId(status.getArchetypeNodeId());
-
-        // Resource
-        if (ChangeType.CREATION.equals(target.getChangeType()) ||
-                ChangeType.MODIFICATION.equals(target.getChangeType())) {
-            target.setEhrStatus(status);
-            target.setEhrStatusId(status.getUid());
-            if (ChangeType.MODIFICATION.equals(target.getChangeType())) {
-                try {
-                    ObjectVersionId currentVersionId = new ObjectVersionId(status.getUid().getValue());
-                    target.setReplacedId(new ObjectVersionId(
-                            currentVersionId.getObjectId().getValue(),
-                            currentVersionId.getCreatingSystemId().getValue(),
-                            String.valueOf(source.getSysVersion() - 1)));
-                } catch (Exception e) {
-                    log.error("Invalid identifier: {}", e);
-                }
-            }
-        } else /*DELETED*/{ //In elimination events the recovered ehr_status by the query is the previous one
-            target.setReplacedId(status.getUid());
-        }
-
-        //Subject
-        if (status.getSubject() != null && status.getSubject().getExternalRef() != null) {
-            PartyRef ref = status.getSubject().getExternalRef();
-            target.setSubjectNamespace(ref.getNamespace());
-            target.setSubjectType(ref.getType());
-            if (ref.getId() != null) {
-                target.setSubjectId(ref.getId().getValue());
-                if (ref.getId() instanceof GenericId) {
-                    target.setSubjectIdScheme(((GenericId) ref.getId()).getScheme());
-                }
-            }
-        }
-
-        // Offset
-        target.setOffset(new EHRBaseChangeOffset(
+        // Partition offset
+        target.setPartitionOffset(new EHRBaseChangePartitionOffset(
                 target.getClass(),
                 source.getTablePartition(),
                 source.getTimeCommitted(),
                 source.getUid(),
                 source.getSysVersion()));
+
+        try {
+            EhrStatus status = DbToRmFormat.reconstructRmObject(EhrStatus.class, new String(source.getAggregate()));
+
+            // Archetype details
+            target.setArchetypeId(status.getArchetypeNodeId());
+
+            // Resource
+            if (ChangeType.CREATION.equals(target.getChangeType()) ||
+                    ChangeType.MODIFICATION.equals(target.getChangeType())) {
+                target.setEhrStatus(status);
+                target.setEhrStatusId(status.getUid());
+                if (ChangeType.MODIFICATION.equals(target.getChangeType())) {
+                    ObjectVersionId currentVersionId = new ObjectVersionId(status.getUid().getValue());
+                    target.setReplacedId(new ObjectVersionId(
+                            currentVersionId.getObjectId().getValue(),
+                            currentVersionId.getCreatingSystemId().getValue(),
+                            String.valueOf(source.getSysVersion() - 1)));
+                }
+            } else /*DELETED*/ { //In elimination events the recovered ehr_status by the query is the previous one
+                target.setReplacedId(status.getUid());
+            }
+
+            //Subject
+            if (status.getSubject() != null && status.getSubject().getExternalRef() != null) {
+                PartyRef ref = status.getSubject().getExternalRef();
+                target.setSubjectNamespace(ref.getNamespace());
+                target.setSubjectType(ref.getType());
+                if (ref.getId() != null) {
+                    target.setSubjectId(ref.getId().getValue());
+                    if (ref.getId() instanceof GenericId) {
+                        target.setSubjectIdScheme(((GenericId) ref.getId()).getScheme());
+                    }
+                }
+            }
+        }catch (Exception e) {
+            log.error("Mapping error: {}", e);
+            OpenEHRSourceConnectException.mappingError(e, target.getPartitionOffset());
+        }
 
         return target;
     }

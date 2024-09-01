@@ -1,6 +1,6 @@
 package com.github.joselalvarez.openehr.connect.source.service.model;
 
-import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffset;
+import com.github.joselalvarez.openehr.connect.source.task.offset.PartitionOffset;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -14,8 +14,8 @@ public class ChangeRequest {
 
     private ZonedDateTime fromDate;
     private ZonedDateTime toDate;
-    private Long maxPoll;
+    private long maxPoll;
 
-    private List<RecordOffset> offsetList = new ArrayList<>();
+    private List<PartitionOffset> partitionOffsets = new ArrayList<>();
 
 }

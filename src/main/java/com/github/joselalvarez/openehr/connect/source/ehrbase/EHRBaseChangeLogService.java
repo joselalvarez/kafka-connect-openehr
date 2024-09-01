@@ -1,5 +1,6 @@
 package com.github.joselalvarez.openehr.connect.source.ehrbase;
 
+import com.github.joselalvarez.openehr.connect.source.exception.OpenEHRSourceConnectException;
 import com.github.joselalvarez.openehr.connect.source.service.OpenEHRChangeLogService;
 import com.github.joselalvarez.openehr.connect.source.service.model.ChangeRequest;
 import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChange;
@@ -24,7 +25,7 @@ public class EHRBaseChangeLogService implements OpenEHRChangeLogService {
             return ehrBaseRepository.findCompositionChanges(request).stream()
                     .map(mapper::mapCompositionChange);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw OpenEHRSourceConnectException.repositoryError(e);
         }
     }
 
@@ -34,7 +35,7 @@ public class EHRBaseChangeLogService implements OpenEHRChangeLogService {
             return ehrBaseRepository.findEhrStatusChanges(request).stream()
                     .map(mapper::mapEhrStatusChange);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw OpenEHRSourceConnectException.repositoryError(e);
         }
     }
 }

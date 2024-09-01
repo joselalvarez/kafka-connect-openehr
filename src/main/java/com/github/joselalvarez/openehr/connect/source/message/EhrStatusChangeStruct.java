@@ -5,7 +5,7 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 
-public class EhrStatusChangeRecord {
+public class EhrStatusChangeStruct {
 
     public static final String TYPE = "_type";
     public static final String TYPE_NAME = "EHR_STATUS_CHANGE";
@@ -51,11 +51,11 @@ public class EhrStatusChangeRecord {
 
     private Struct delegate;
 
-    public EhrStatusChangeRecord() {
+    public EhrStatusChangeStruct() {
         this.delegate = new Struct(SCHEMA);
     }
 
-    public EhrStatusChangeRecord(Struct delegate) {
+    public EhrStatusChangeStruct(Struct delegate) {
         this.delegate = delegate;
     }
 
@@ -63,7 +63,7 @@ public class EhrStatusChangeRecord {
         return delegate;
     }
 
-    public static boolean isSchema(Schema schema) {
+    public static boolean supports(Schema schema) {
         return schema != null && SCHEMA.name().equals(schema.name());
     }
 

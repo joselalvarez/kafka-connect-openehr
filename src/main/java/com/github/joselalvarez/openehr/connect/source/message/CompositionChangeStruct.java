@@ -5,7 +5,7 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 
-public class CompositionChangeRecord {
+public class CompositionChangeStruct {
 
     public static final String TYPE = "_type";
     public static final String TYPE_NAME = "COMPOSITION_CHANGE";
@@ -43,11 +43,11 @@ public class CompositionChangeRecord {
 
     private Struct delegate;
 
-    public CompositionChangeRecord() {
+    public CompositionChangeStruct() {
         this.delegate = new Struct(SCHEMA);
     }
 
-    public CompositionChangeRecord(Struct delegate) {
+    public CompositionChangeStruct(Struct delegate) {
         this.delegate = delegate;
     }
 
@@ -55,7 +55,7 @@ public class CompositionChangeRecord {
         return delegate;
     }
 
-    public static boolean isSchema(Schema schema) {
+    public static boolean supports(Schema schema) {
         return schema != null && SCHEMA.name().equals(schema.name());
     }
 

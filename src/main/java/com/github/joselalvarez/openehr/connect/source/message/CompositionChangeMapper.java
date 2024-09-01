@@ -2,6 +2,7 @@ package com.github.joselalvarez.openehr.connect.source.message;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.joselalvarez.openehr.connect.source.exception.OpenEHRSourceConnectException;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
 import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChange;
 import lombok.RequiredArgsConstructor;
@@ -11,17 +12,17 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 @RequiredArgsConstructor
 @Slf4j
-public class CompositionChangeRecordMapper {
+public class CompositionChangeMapper {
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final ObjectMapper canonicalObjectMapper;
     private final OpenEHRSourceConnectorConfig connectorConfig;
 
     public Struct mapStruct(CompositionChange source) {
-        CompositionChangeRecord target = new CompositionChangeRecord();
+        CompositionChangeStruct target = new CompositionChangeStruct();
 
         target.setChangeType(source.getChangeType().getValue());
         target.setTimeCommitted(source.getTimeCommitted().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
@@ -40,19 +41,20 @@ public class CompositionChangeRecordMapper {
                 target.setComposition(canonicalObjectMapper.writeValueAsBytes(source.getComposition()));
         } catch (JsonProcessingException e) {
             log.error("Composition serialization error: {}", e);
+            throw OpenEHRSourceConnectException.serdeError(e);
         }
         return target.getDelegate();
     }
 
     public SourceRecord mapRecord(CompositionChange source) {
         return new SourceRecord(
-                source.getOffset().getPartitionMap(),
-                source.getOffset().getOffsetMap(),
+                source.getPartitionOffset().getPartitionMap(),
+                source.getPartitionOffset().getOffsetMap(),
                 connectorConfig.getCompositionTopic(),
                 null, // Topic partition (default by kafka)
                 Schema.STRING_SCHEMA, // Message key schema
                 source.getEhrId().toString(), // Message key
-                CompositionChangeRecord.SCHEMA, // Value schema
+                CompositionChangeStruct.SCHEMA, // Value schema
                 mapStruct(source) // Value
         );
     }

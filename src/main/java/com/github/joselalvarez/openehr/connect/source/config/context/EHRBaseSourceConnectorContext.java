@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
 import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseChangeLogService;
-import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseRecordOffsetFactory;
+import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBasePartitionOffsetFactory;
 import com.github.joselalvarez.openehr.connect.source.ehrbase.EHRBaseRepository;
-import com.github.joselalvarez.openehr.connect.source.message.CompositionChangeRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.message.EhrStatusChangeRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffsetFactory;
+import com.github.joselalvarez.openehr.connect.source.message.CompositionChangeMapper;
+import com.github.joselalvarez.openehr.connect.source.message.EhrStatusChangeMapper;
+import com.github.joselalvarez.openehr.connect.source.task.offset.PartitionOffsetFactory;
 import com.github.joselalvarez.openehr.connect.source.service.OpenEHRChangeLogService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -29,9 +29,9 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     private EHRBaseRepository ehrBaseRepository;
     private EHRBaseChangeLogService changeLogService;
     private ObjectMapper canonicalObjectMapper;
-    private CompositionChangeRecordMapper compositionChangeRecordMapper;
-    private EhrStatusChangeRecordMapper ehrStatusChangeRecordMapper;
-    private EHRBaseRecordOffsetFactory recordOffsetFactory;
+    private CompositionChangeMapper compositionChangeRecordMapper;
+    private EhrStatusChangeMapper ehrStatusChangeRecordMapper;
+    private EHRBasePartitionOffsetFactory partitionOffsetFactory;
 
     public EHRBaseSourceConnectorContext(OpenEHRSourceConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
@@ -39,13 +39,13 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
         hikariDataSource = new HikariDataSource(new HikariConfig(connectorConfig.getJdbcProperties()));
         log.info("Connector[name={}]: EHRBase datasource created", connectorConfig.getConnectorName());
         // Beans
-        recordOffsetFactory = new EHRBaseRecordOffsetFactory(connectorConfig);
+        partitionOffsetFactory = new EHRBasePartitionOffsetFactory(connectorConfig);
         ehrBaseRepository = new EHRBaseRepository(connectorConfig, new QueryRunner(hikariDataSource));
         changeLogService = new EHRBaseChangeLogService(ehrBaseRepository);
         canonicalObjectMapper = CanonicalJson.MARSHAL_OM;
         canonicalObjectMapper.disable(SerializationFeature.INDENT_OUTPUT);
-        compositionChangeRecordMapper = new CompositionChangeRecordMapper(canonicalObjectMapper, connectorConfig);
-        ehrStatusChangeRecordMapper = new EhrStatusChangeRecordMapper(canonicalObjectMapper, connectorConfig);
+        compositionChangeRecordMapper = new CompositionChangeMapper(canonicalObjectMapper, connectorConfig);
+        ehrStatusChangeRecordMapper = new EhrStatusChangeMapper(canonicalObjectMapper, connectorConfig);
 
     }
 
@@ -55,7 +55,7 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     }
 
     @Override
-    public OpenEHRChangeLogService getOpenEHREventLogService() {
+    public OpenEHRChangeLogService getOpenEHRChangeLogService() {
         return changeLogService;
     }
 
@@ -65,18 +65,18 @@ class EHRBaseSourceConnectorContext extends ReferenceCountedObject implements Op
     }
 
     @Override
-    public CompositionChangeRecordMapper getCompositionChangeRecordMapper() {
+    public CompositionChangeMapper getCompositionChangeMapper() {
         return compositionChangeRecordMapper;
     }
 
     @Override
-    public EhrStatusChangeRecordMapper getEhrStatusChangeRecordMapper() {
+    public EhrStatusChangeMapper getEhrStatusChangeMapper() {
         return ehrStatusChangeRecordMapper;
     }
 
     @Override
-    public RecordOffsetFactory getRecordOffsetFactory() {
-        return recordOffsetFactory;
+    public PartitionOffsetFactory getPartitionOffsetFactory() {
+        return partitionOffsetFactory;
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.github.joselalvarez.openehr.connect.source.message;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.joselalvarez.openehr.connect.source.exception.OpenEHRSourceConnectException;
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnectorConfig;
 import com.github.joselalvarez.openehr.connect.source.service.model.EhrStatusChange;
 import lombok.RequiredArgsConstructor;
@@ -14,13 +15,13 @@ import java.time.format.DateTimeFormatter;
 
 @RequiredArgsConstructor
 @Slf4j
-public class EhrStatusChangeRecordMapper {
+public class EhrStatusChangeMapper {
 
     private final ObjectMapper canonicalObjectMapper;
     private final OpenEHRSourceConnectorConfig connectorConfig;
 
     public Struct mapStruct(EhrStatusChange source) {
-        EhrStatusChangeRecord target = new EhrStatusChangeRecord();
+        EhrStatusChangeStruct target = new EhrStatusChangeStruct();
 
         target.setChangeType(source.getChangeType().getValue());
         target.setTimeCommitted(source.getTimeCommitted().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
@@ -42,20 +43,21 @@ public class EhrStatusChangeRecordMapper {
             if (source.getEhrStatus() != null)
                 target.setEhrStatus(canonicalObjectMapper.writeValueAsBytes(source.getEhrStatus()));
         } catch (JsonProcessingException e) {
-            log.error("Composition serialization error: {}", e);
+            log.error("EhrStatus serialization error: {}", e);
+            throw OpenEHRSourceConnectException.serdeError(e);
         }
         return target.getDelegate();
     }
 
     public SourceRecord mapRecord(EhrStatusChange source) {
         return new SourceRecord(
-                source.getOffset().getPartitionMap(),
-                source.getOffset().getOffsetMap(),
+                source.getPartitionOffset().getPartitionMap(),
+                source.getPartitionOffset().getOffsetMap(),
                 connectorConfig.getEhrTopic(),
                 null, // Topic partition (default by kafka)
                 Schema.STRING_SCHEMA, // Message key schema
                 source.getEhrId().toString(), // Message key
-                EhrStatusChangeRecord.SCHEMA, // Value schema
+                EhrStatusChangeStruct.SCHEMA, // Value schema
                 mapStruct(source) // Value
         );
     }

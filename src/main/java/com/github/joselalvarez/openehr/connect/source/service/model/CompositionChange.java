@@ -1,6 +1,6 @@
 package com.github.joselalvarez.openehr.connect.source.service.model;
 
-import com.github.joselalvarez.openehr.connect.source.task.offset.RecordOffset;
+import com.github.joselalvarez.openehr.connect.source.task.offset.PartitionOffset;
 import com.nedap.archie.rm.archetyped.TemplateId;
 import com.nedap.archie.rm.composition.Composition;
 import com.nedap.archie.rm.support.identification.ArchetypeID;
@@ -26,6 +26,6 @@ public class CompositionChange {
     private UIDBasedId replacedId;
     private Composition composition;
 
-    private RecordOffset offset;
+    private PartitionOffset partitionOffset;
 
 }

@@ -5,8 +5,8 @@ import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceConnec
 import com.github.joselalvarez.openehr.connect.source.config.OpenEHRSourceTaskConfig;
 import com.github.joselalvarez.openehr.connect.source.config.context.OpenEHRSourceConnectorContext;
 import com.github.joselalvarez.openehr.connect.source.config.context.OpenEHRSourceConnectorSharedContext;
-import com.github.joselalvarez.openehr.connect.source.message.CompositionChangeRecordMapper;
-import com.github.joselalvarez.openehr.connect.source.message.EhrStatusChangeRecordMapper;
+import com.github.joselalvarez.openehr.connect.source.message.CompositionChangeMapper;
+import com.github.joselalvarez.openehr.connect.source.message.EhrStatusChangeMapper;
 import com.github.joselalvarez.openehr.connect.source.service.OpenEHRChangeLogService;
 import com.github.joselalvarez.openehr.connect.source.service.model.ChangeRequest;
 import com.github.joselalvarez.openehr.connect.source.service.model.CompositionChangeRequest;
@@ -24,9 +24,9 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
     private OpenEHRSourceConnectorConfig connectorConfig;
     private OpenEHRSourceConnectorContext connectorContext;
     private OpenEHRChangeLogService changeLogService;
-    private CompositionChangeRecordMapper compositionChangeRecordMapper;
-    private EhrStatusChangeRecordMapper ehrStatusChangeRecordMapper;
-    private TaskOffsetStorage taskOffsetStorage;
+    private CompositionChangeMapper compositionChangeRecordMapper;
+    private EhrStatusChangeMapper ehrStatusChangeRecordMapper;
+    private TaskPartitionOffsetStorage partitionOffsetStorage;
 
 
     @Override
@@ -39,13 +39,13 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
         taskConfig.load(map, OpenEHRSourceConnectorConfig::new);
         connectorConfig = taskConfig.getConnectorConfig();
         connectorContext = OpenEHRSourceConnectorSharedContext.start(taskConfig);
-        changeLogService = connectorContext.getOpenEHREventLogService();
-        compositionChangeRecordMapper = connectorContext.getCompositionChangeRecordMapper();
-        ehrStatusChangeRecordMapper = connectorContext.getEhrStatusChangeRecordMapper();
-        taskOffsetStorage = new TaskOffsetStorage(
+        changeLogService = connectorContext.getOpenEHRChangeLogService();
+        compositionChangeRecordMapper = connectorContext.getCompositionChangeMapper();
+        ehrStatusChangeRecordMapper = connectorContext.getEhrStatusChangeMapper();
+        partitionOffsetStorage = new TaskPartitionOffsetStorage(
                 context.offsetStorageReader(),
                 taskConfig,
-                connectorContext.getRecordOffsetFactory()
+                connectorContext.getPartitionOffsetFactory()
         );
         super.start(connectorConfig.getPollIntervalMs(), connectorContext::isClosed);
         log.info("Task[name={}]: online", taskConfig.getTaskName());
@@ -59,12 +59,12 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
                 .toDate(connectorConfig.getFilterCompositionToDate())
                 .rootConcept(connectorConfig.getFilterCompositionByArchetype())
                 .templateId(connectorConfig.getFilterCompositionByTemplate())
-                .offsetList(taskOffsetStorage.getCompositionChangeOffsetList())
+                .partitionOffsets(partitionOffsetStorage.getCompositionChangePartitionOffsets())
             .build();
 
         return changeLogService.getCompositionChanges(request)
                 .map(compositionChangeRecordMapper::mapRecord)
-                .map(taskOffsetStorage::registerCompositionChangeOffset)
+                .map(partitionOffsetStorage::registerCompositionChangePartitionOffset)
             .collect(Collectors.toList());
 
     }
@@ -76,12 +76,12 @@ public class OpenEHRSourceTask extends PeriodicSourceTask {
                 .fromDate(connectorConfig.getFilterEhrStatusFromDate())
                 .toDate(connectorConfig.getFilterEhrStatusToDate())
                 .maxPoll(connectorConfig.getPollBatchSize())
-                .offsetList(taskOffsetStorage.getEhrStatusChangeOffsetList())
+                .partitionOffsets(partitionOffsetStorage.getEhrStatusChangePartitionOffsets())
             .build();
 
         return changeLogService.getEhrStatusChanges(request)
                 .map(ehrStatusChangeRecordMapper::mapRecord)
-                .map(taskOffsetStorage::registerEhrStatusChangeOffset)
+                .map(partitionOffsetStorage::registerEhrStatusChangePartitionOffset)
             .collect(Collectors.toList());
     }
 
